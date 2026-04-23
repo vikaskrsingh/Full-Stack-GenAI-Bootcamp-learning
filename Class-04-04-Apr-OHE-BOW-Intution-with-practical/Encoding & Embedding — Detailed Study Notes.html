@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<!-- saved from url=(0070)file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encoding &amp; Embedding — Detailed Study Notes</title>
+<link href="./Encoding &amp; Embedding — Detailed Study Notes_files/css2" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1108;
+    --paper: #faf7f2;
+    --cream: #f2ede3;
+    --gold: #c8a84b;
+    --gold-light: #e8d5a0;
+    --rust: #b84a2a;
+    --rust-light: #f0d5cd;
+    --teal: #2a6b6b;
+    --teal-light: #c8e0e0;
+    --sage: #4a6b4a;
+    --sage-light: #d0e0d0;
+    --purple: #5a3a7a;
+    --purple-light: #ddd0ee;
+    --border: #d8c9a8;
+    --shadow: rgba(26,17,8,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  /* Header */
+  .hero {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 300px; height: 300px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    opacity: 0.15;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 20%;
+    width: 200px; height: 200px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    opacity: 0.1;
+  }
+  .hero-inner { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .hero-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 18px;
+    display: block;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 20px;
+    color: var(--paper);
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero-meta {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .meta-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: rgba(250,247,242,0.6);
+    letter-spacing: 0.5px;
+  }
+  .meta-item strong { color: var(--gold-light); }
+
+  /* TOC */
+  .toc-bar {
+    background: var(--gold);
+    padding: 16px 40px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .toc-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-right: 12px;
+  }
+  .toc-bar a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 4px 12px;
+    background: rgba(26,17,8,0.1);
+    border-radius: 20px;
+    transition: background 0.2s;
+  }
+  .toc-bar a:hover { background: rgba(26,17,8,0.25); }
+
+  /* Main layout */
+  .main { max-width: 860px; margin: 0 auto; padding: 50px 30px; }
+
+  /* Intro callout */
+  .session-intro {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--gold);
+    border-radius: 4px;
+    padding: 28px 32px;
+    margin-bottom: 50px;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+  .session-intro p { margin-bottom: 10px; font-weight: 300; }
+  .session-intro p:last-child { margin-bottom: 0; }
+  .session-intro strong { font-weight: 600; }
+
+  /* Section heading */
+  .section {
+    margin-bottom: 60px;
+    scroll-margin-top: 20px;
+  }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .section-subtitle {
+    font-size: 13px;
+    color: var(--teal);
+    font-style: italic;
+    display: block;
+    margin-top: 4px;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--ink);
+    margin: 32px 0 12px;
+    font-weight: 700;
+  }
+  h4 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--teal);
+    margin: 22px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  p { margin-bottom: 14px; font-weight: 300; }
+  p strong { font-weight: 600; }
+
+  /* Quote from instructor */
+  .instructor-quote {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 6px;
+    padding: 22px 28px;
+    margin: 24px 0;
+    position: relative;
+    font-style: italic;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+  .instructor-quote::before {
+    content: '"';
+    font-family: 'Playfair Display', serif;
+    font-size: 72px;
+    color: var(--gold);
+    position: absolute;
+    top: -10px; left: 18px;
+    line-height: 1;
+    opacity: 0.6;
+  }
+  .instructor-quote p { color: var(--paper); margin-bottom: 0; padding-left: 20px; font-weight: 300; }
+  .instructor-quote cite {
+    display: block;
+    margin-top: 10px;
+    padding-left: 20px;
+    font-size: 12px;
+    font-style: normal;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 22px 0;
+    border: 1px solid;
+  }
+  .callout-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .callout.definition { background: var(--teal-light); border-color: var(--teal); }
+  .callout.definition .callout-title { color: var(--teal); }
+  .callout.warning { background: var(--rust-light); border-color: var(--rust); }
+  .callout.warning .callout-title { color: var(--rust); }
+  .callout.tip { background: var(--gold-light); border-color: var(--gold); }
+  .callout.tip .callout-title { color: #7a5a00; }
+  .callout.insight { background: var(--purple-light); border-color: var(--purple); }
+  .callout.insight .callout-title { color: var(--purple); }
+  .callout.success { background: var(--sage-light); border-color: var(--sage); }
+  .callout.success .callout-title { color: var(--sage); }
+  .callout p { margin-bottom: 6px; font-size: 15.5px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* Example blocks */
+  .example-block {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 24px 0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .example-label {
+    background: var(--ink);
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+  }
+  .example-body { padding: 20px 22px; }
+  .example-body p { margin-bottom: 8px; font-size: 15.5px; }
+  .example-body p:last-child { margin-bottom: 0; }
+
+  /* Data tables */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 22px 0;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    background: var(--paper);
+  }
+  thead tr { background: var(--ink); color: var(--paper); }
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) { background: var(--cream); }
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .td-highlight { font-weight: 600; color: var(--teal); }
+  .td-1 { color: var(--sage); font-weight: 600; }
+  .td-0 { color: #bbb; }
+
+  /* Code blocks */
+  .code-block {
+    background: #1e1b16;
+    border-radius: 6px;
+    margin: 22px 0;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .code-header {
+    background: #2e2820;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f56; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #27c93f; }
+  pre {
+    padding: 22px 24px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    color: #e8e0d0;
+  }
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #637777; font-style: italic; }
+  .var { color: #ffcb6b; }
+  .num { color: #f78c6c; }
+  .imp { color: #89ddff; }
+
+  /* Step-by-step */
+  .steps { list-style: none; margin: 18px 0; }
+  .steps li {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 18px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--gold);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { font-weight: 600; display: block; margin-bottom: 4px; }
+  .step-content p { margin-bottom: 0; font-size: 15.5px; }
+
+  /* Pros/Cons */
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 22px 0;
+  }
+  @media (max-width: 600px) { .pros-cons { grid-template-columns: 1fr; } }
+  .pros-box, .cons-box {
+    border-radius: 6px;
+    padding: 20px;
+    border: 1px solid;
+  }
+  .pros-box { background: var(--sage-light); border-color: var(--sage); }
+  .cons-box { background: var(--rust-light); border-color: var(--rust); }
+  .box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .pros-box .box-title { color: var(--sage); }
+  .cons-box .box-title { color: var(--rust); }
+  .check-list { list-style: none; }
+  .check-list li {
+    font-size: 15px;
+    margin-bottom: 8px;
+    padding-left: 22px;
+    position: relative;
+    font-weight: 300;
+  }
+  .check-list li::before {
+    position: absolute;
+    left: 0;
+    font-size: 14px;
+  }
+  .pros-box .check-list li::before { content: '✓'; color: var(--sage); font-weight: 700; }
+  .cons-box .check-list li::before { content: '✗'; color: var(--rust); font-weight: 700; }
+
+  /* Visual vector diagram */
+  .vector-diagram {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin: 22px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    box-shadow: 0 2px 8px var(--shadow);
+    overflow-x: auto;
+  }
+  .vector-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .v-label {
+    width: 80px;
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .v-cell {
+    width: 55px;
+    height: 36px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--cream);
+    flex-shrink: 0;
+  }
+  .v-cell.one { background: #c8e0d0; color: var(--sage); border-color: var(--sage); }
+  .v-cell.zero { color: #ccc; }
+  .v-cell.header { background: var(--ink); color: var(--gold); font-size: 11px; height: 28px; }
+  .vocab-label { font-size: 11px; color: #888; margin-bottom: 4px; padding-left: 80px; }
+
+  /* Comparison big table */
+  .compare-table th:first-child { width: 180px; }
+
+  /* Divider */
+  .divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 50px 0;
+  }
+
+  /* Interview box */
+  .interview-box {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 8px;
+    padding: 30px 32px;
+    margin: 30px 0;
+  }
+  .interview-box h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    margin-bottom: 20px;
+    margin-top: 0;
+    font-size: 20px;
+  }
+  .interview-q {
+    border-left: 3px solid var(--gold);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 0 4px 4px 0;
+  }
+  .interview-q .q { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold); margin-bottom: 6px; }
+  .interview-q .a { font-size: 15px; color: rgba(250,247,242,0.85); line-height: 1.6; font-weight: 300; }
+
+  /* Course roadmap */
+  .roadmap {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 22px 0;
+  }
+  .roadmap-item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    position: relative;
+  }
+  .roadmap-item:not(:last-child) .rm-line {
+    position: absolute;
+    left: 19px;
+    top: 36px;
+    width: 2px;
+    height: 100%;
+    background: var(--border);
+  }
+  .rm-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 2px solid;
+    position: relative;
+    z-index: 1;
+    background: var(--paper);
+  }
+  .rm-dot.current { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+  .rm-dot.future { border-color: var(--border); color: #aaa; }
+  .rm-content { padding: 8px 0 24px; }
+  .rm-content strong { display: block; font-size: 15px; font-weight: 600; }
+  .rm-content span { font-size: 13px; color: #888; }
+
+  /* Footer */
+  footer {
+    background: var(--ink);
+    color: rgba(250,247,242,0.5);
+    padding: 30px 40px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  footer strong { color: var(--gold); }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section { animation: fadeUp 0.4s ease both; }
+
+  /* Print styles */
+  @media print {
+    body { font-size: 14px; }
+    .hero { padding: 30px 20px; }
+    .toc-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <span class="hero-tag">Full Stack GenAI Bootcamp 1.0 · Class Notes</span>
+    <h1>Encoding &amp;<br><span>Embedding</span></h1>
+    <p style="font-size:16px; color:rgba(250,247,242,0.7); font-weight:300; max-width:520px; margin-top:12px;">
+      Complete classroom-equivalent notes — covering every concept, every example, every code walkthrough from the live session.
+    </p>
+    <div class="hero-meta">
+      <div class="meta-item">📅 Session Date: <strong>4th April 2026</strong></div>
+      <div class="meta-item">🎙️ Instructor: <strong>Sunny Savita</strong></div>
+      <div class="meta-item">⏱️ Duration: <strong>~5 Hours (incl. Q&amp;A)</strong></div>
+      <div class="meta-item">📌 Module: <strong>Encoding &amp; Embedding (Day 1)</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc-bar">
+  <span class="toc-label">Jump To →</span>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#why">Why Encode?</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#ohe">One-Hot Encoding</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#bow">Bag of Words</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#tfidf">TF-IDF</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#embedding">Embeddings</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#practical">Practicals</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#interview">Interview Q&amp;A</a>
+  <a href="file:///C:/Users/vikas/Downloads/Encoding_Embedding_DetailedNotes.html#roadmap">Roadmap</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- Intro -->
+  <div class="session-intro">
+    <p><strong>Missed the session?</strong> These notes are written so you don't need to. Every concept is explained the same way the instructor taught it — with the same examples, the same logic, and the same depth. Read top to bottom as if you were in class.</p>
+    <p>Resources: All code, handwritten PDFs, and assignments are on the GitHub repo — <strong>Full Stack GenAI Bootcamp 1.0</strong> (shared in course chat). Recordings are on the course platform (krishnaik.academy) within 24 hours of each session.</p>
+    <p><strong>What's covered today:</strong> One-Hot Encoding · Bag of Words · TF-IDF (intro) · Practical coding for OHE &amp; BoW · Why we need Embeddings.</p>
+  </div>
+
+  <!-- SECTION 0: Why -->
+  <div class="section" id="why">
+    <div class="section-header">
+      <div class="section-num">0</div>
+      <div>
+        <div class="section-title">The Big Picture — Why Do We Encode Text?</div>
+        <span class="section-subtitle">The fundamental problem that encoding and embedding solve</span>
+      </div>
+    </div>
+
+    <p>Before learning any technique, understand the core problem. Every ML and DL model works with <strong>numbers — not words</strong>. If you have text data and you want to train a model or make predictions, you first have to convert that text into numerical form.</p>
+
+    <div class="instructor-quote">
+      <p>The machine doesn't understand English. It doesn't understand Hindi. It doesn't understand any human language. It only understands numbers. So whatever text we have — sentences, paragraphs, documents — we have to convert everything into numbers first. That conversion is what encoding and embedding are all about.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>The Full Pipeline (Big Picture)</h3>
+    <div class="callout definition">
+      <div class="callout-title">🔄 Text → Numbers → Model → Output</div>
+      <p><strong>Raw Text</strong> (your data) → <strong>Encoding / Embedding</strong> (convert to numbers) → <strong>ML / DL Model</strong> (trains and learns) → <strong>Predictions / Answers</strong></p>
+      <p>Without the middle step, no model can work. That's why this chapter is critical — it's the bridge between raw human language and machine intelligence.</p>
+    </div>
+
+    <h3>Where is This Used in GenAI?</h3>
+    <p>The instructor emphasized that encoding and embedding directly appear in:</p>
+    <ul style="margin: 10px 0 14px 20px; font-weight:300;">
+      <li style="margin-bottom:6px;"><strong>RAG (Retrieval Augmented Generation)</strong> — documents are embedded so similar content can be retrieved</li>
+      <li style="margin-bottom:6px;"><strong>Semantic Search</strong> — finding similar documents using vector similarity</li>
+      <li style="margin-bottom:6px;"><strong>LLM internals</strong> — every LLM converts input tokens into embeddings before processing</li>
+      <li style="margin-bottom:6px;"><strong>Fine-tuning</strong> — the model's embedding layer is updated during training</li>
+    </ul>
+
+    <h3>Historical Timeline</h3>
+    <div class="callout tip">
+      <div class="callout-title">📅 How Techniques Evolved</div>
+      <p><strong>~2010–2015:</strong> Classical era — One-Hot Encoding, Bag of Words, TF-IDF dominated NLP. Used with algorithms like Naive Bayes, Logistic Regression.</p>
+      <p><strong>~2013:</strong> Word2Vec introduced by Google — neural embeddings that capture semantic meaning. Game changer.</p>
+      <p><strong>~2017–2018:</strong> Transformer architecture ("Attention is All You Need" paper). Led to BERT, GPT, and all modern LLMs.</p>
+      <p><strong>~2019–now:</strong> Transformer-based embeddings (SOTA). What powers ChatGPT, Claude, Gemini, etc.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ Why Learn Old Techniques?</div>
+      <p>Even though OHE and BoW are "old," interviews for GenAI roles start from these fundamentals. The instructor himself was asked about TF-IDF in a recent interview at a major company. You need this to understand <em>why</em> embeddings are better, and to understand the evolution of NLP.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 1: OHE -->
+  <div class="section" id="ohe">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">One-Hot Encoding (OHE)</div>
+        <span class="section-subtitle">The oldest and simplest text-to-number technique</span>
+      </div>
+    </div>
+
+    <div class="callout definition">
+      <div class="callout-title">📖 Definition</div>
+      <p><strong>One-Hot Encoding</strong> represents each word as a binary vector — a list of 0s and 1s — where <strong>1</strong> means the word is present and <strong>0</strong> means the word is absent.</p>
+      <p>It is called "one-hot" because exactly one position in the vector is "hot" (= 1) at a time, and all others are 0.</p>
+    </div>
+
+    <h3>Step 1 — Understand Your Data (Documents)</h3>
+
+    <div class="example-block">
+      <div class="example-label">📄 Example Dataset — 4 Documents</div>
+      <div class="example-body">
+        <p>The instructor used this simple dataset throughout the explanation:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Doc ID</th><th>Sentence</th></tr></thead>
+            <tbody>
+              <tr><td class="td-highlight">D1</td><td>People watch movie</td></tr>
+              <tr><td class="td-highlight">D2</td><td>People watch cricket</td></tr>
+              <tr><td class="td-highlight">D3</td><td>People like movie</td></tr>
+              <tr><td class="td-highlight">D4</td><td>People like cricket</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:10px; font-size:14px; color:#666;">💡 Note: "Document" and "Sentence" are interchangeable terms here. Whether it's one sentence or a full paragraph, the process is the same.</p>
+      </div>
+    </div>
+
+    <h3>Step 2 — Build the Vocabulary</h3>
+
+    <p>The <strong>vocabulary</strong> is simply the collection of all <strong>unique words</strong> from your entire dataset. Repeated words are counted only once.</p>
+
+    <div class="example-block">
+      <div class="example-label">🔤 Extracting the Vocabulary</div>
+      <div class="example-body">
+        <p>From D1+D2+D3+D4, the unique words are:</p>
+        <p style="font-family: &#39;JetBrains Mono&#39;, monospace; background: var(--cream); padding: 12px 16px; border-radius: 4px; font-size: 14px; margin-top: 8px;">
+          people · watch · like · movie · cricket
+        </p>
+        <p style="margin-top:12px;"><strong>Vocabulary size = 5</strong></p>
+        <p>👉 <strong>This vocabulary size becomes the dimension (length) of every vector.</strong></p>
+        <p>If vocabulary size = 5 → every vector has 5 positions<br>
+        If vocabulary size = 10,000 → every vector has 10,000 positions</p>
+      </div>
+    </div>
+
+    <div class="callout definition">
+      <div class="callout-title">📐 Key Rule: Vocabulary Size = Vector Dimension</div>
+      <p>If your vocabulary has 5 words, every document is represented as a vector of length 5.</p>
+      <p>If your vocabulary has 50,000 words (realistic for real data), every vector has 50,000 positions.</p>
+    </div>
+
+    <h3>Step 3 — Convert Documents to Vectors (Document-Level)</h3>
+
+    <p>For each document, go through the vocabulary left to right. If the word is present in that document → write <strong>1</strong>. If absent → write <strong>0</strong>.</p>
+
+    <div class="vector-diagram">
+      <div class="vocab-label">Vocabulary → people &nbsp;&nbsp; watch &nbsp;&nbsp; like &nbsp;&nbsp;&nbsp; movie &nbsp;&nbsp; cricket</div>
+      <div class="vector-row">
+        <span class="v-label">D1</span>
+        <div class="v-cell one">1</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <span style="margin-left:16px; font-size:12px; color:#888;">→ People watch movie</span>
+      </div>
+      <div class="vector-row">
+        <span class="v-label">D2</span>
+        <div class="v-cell one">1</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell one">1</div>
+        <span style="margin-left:16px; font-size:12px; color:#888;">→ People watch cricket</span>
+      </div>
+      <div class="vector-row">
+        <span class="v-label">D3</span>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <span style="margin-left:16px; font-size:12px; color:#888;">→ People like movie</span>
+      </div>
+      <div class="vector-row">
+        <span class="v-label">D4</span>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell one">1</div>
+        <div class="v-cell zero">0</div>
+        <div class="v-cell one">1</div>
+        <span style="margin-left:16px; font-size:12px; color:#888;">→ People like cricket</span>
+      </div>
+    </div>
+
+    <h3>Two Levels of OHE Representation</h3>
+
+    <p>The instructor explained this is a crucial point — there are <strong>two different ways</strong> to represent data using OHE, used in different contexts:</p>
+
+    <h4>A) Document-Level Representation</h4>
+    <p>One single vector per entire document/sentence. Used in <strong>Classical Machine Learning</strong> (Logistic Regression, Naive Bayes) for tasks like text classification.</p>
+    <div class="example-block">
+      <div class="example-label">📄 Document-Level: "People watch movie"</div>
+      <div class="example-body">
+        <p>Vocabulary: [people, watch, like, movie, cricket]</p>
+        <p style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:10px 14px; border-radius:4px;">
+          Vector = [1, 1, 0, 1, 0] &nbsp;&nbsp;&nbsp; (Dimension: 1 × 5)
+        </p>
+        <p style="margin-top:8px; font-size:14px;">The entire sentence is squashed into one vector of length 5.</p>
+      </div>
+    </div>
+
+    <h4>B) Word-Level Representation</h4>
+    <p>Each individual word gets its own vector. Only one position is 1; everything else is 0. Used in <strong>Deep Learning</strong> (RNN, LSTM, GRU). This is actually the classic definition of "one-hot."</p>
+
+    <div class="example-block">
+      <div class="example-label">🔤 Word-Level: "People watch movie"</div>
+      <div class="example-body">
+        <div style="font-family:&#39;JetBrains Mono&#39;,monospace; font-size:13px;">
+          <div style="margin-bottom:6px;">people &nbsp;→ [<span style="color:var(--sage);font-weight:700;">1</span>, 0, 0, 0, 0] &nbsp; ← position 0 is hot</div>
+          <div style="margin-bottom:6px;">watch &nbsp;&nbsp;→ [0, <span style="color:var(--sage);font-weight:700;">1</span>, 0, 0, 0] &nbsp; ← position 1 is hot</div>
+          <div>movie &nbsp;&nbsp;→ [0, 0, 0, <span style="color:var(--sage);font-weight:700;">1</span>, 0] &nbsp; ← position 3 is hot</div>
+        </div>
+        <p style="margin-top:14px;">Combined: <strong>3 rows × 5 columns matrix</strong> (3 words, 5 vocab words)</p>
+        <p style="font-size:14px; color:#666;">Dimension = number_of_words × vocabulary_size = 3 × 5</p>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:8px;">
+      <table>
+        <thead><tr><th>Representation</th><th>Dimension</th><th>Used In</th><th>How It Works</th></tr></thead>
+        <tbody>
+          <tr><td class="td-highlight">Document-Level</td><td>1 × vocab_size</td><td>Logistic Regression, Naive Bayes</td><td>Entire sentence → 1 vector</td></tr>
+          <tr><td class="td-highlight">Word-Level</td><td>num_words × vocab_size</td><td>RNN, LSTM, GRU</td><td>Each word → its own vector</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Practical Example Walkthrough (from class)</h3>
+
+    <div class="example-block">
+      <div class="example-label">💬 Instructor's Worked Example — Sentence: "People watch cricket, people"</div>
+      <div class="example-body">
+        <p>Vocabulary: [people, watch, like, movie, cricket]</p>
+        <p><strong>Document-Level OHE:</strong></p>
+        <p>Is people there? <strong>Yes → 1</strong> &nbsp;|&nbsp; Is watch there? <strong>Yes → 1</strong> &nbsp;|&nbsp; Is like there? <strong>No → 0</strong> &nbsp;|&nbsp; Is movie there? <strong>No → 0</strong> &nbsp;|&nbsp; Is cricket there? <strong>Yes → 1</strong></p>
+        <p style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:10px 14px; border-radius:4px; margin-top:8px;">Result → [1, 1, 0, 0, 1]</p>
+        <p style="margin-top:12px;"><strong>Word-Level OHE:</strong></p>
+        <div style="font-family:&#39;JetBrains Mono&#39;,monospace; font-size:13px; background:var(--cream); padding:10px 14px; border-radius:4px;">
+          people → [1, 0, 0, 0, 0]<br>
+          watch  → [0, 1, 0, 0, 0]<br>
+          cricket→ [0, 0, 0, 0, 1]<br>
+          <br>
+          Matrix: 3 × 5
+        </div>
+      </div>
+    </div>
+
+    <h3>Pros &amp; Cons of One-Hot Encoding</h3>
+    <div class="pros-cons">
+      <div class="pros-box">
+        <div class="box-title">✅ Advantages</div>
+        <ul class="check-list">
+          <li>Extremely easy to understand and implement</li>
+          <li>Simple binary representation (0s and 1s)</li>
+          <li>No model training required — direct mapping</li>
+          <li>Anyone can explain it in an interview</li>
+        </ul>
+      </div>
+      <div class="cons-box">
+        <div class="box-title">❌ Disadvantages</div>
+        <ul class="check-list">
+          <li><strong>Sparse Matrix</strong> — most values are 0, wasting memory</li>
+          <li><strong>High Dimensionality</strong> — 50,000 vocab = 50,000-dim vector</li>
+          <li><strong>No Semantic Meaning</strong> — "like" and "love" look completely unrelated</li>
+          <li><strong>Out-of-Vocabulary (OOV)</strong> — new unseen words can't be represented</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>The Sparse Matrix Problem — Explained Visually</h3>
+    <div class="example-block">
+      <div class="example-label">🚨 Sparse Matrix Problem with Large Vocabulary</div>
+      <div class="example-body">
+        <p>Suppose vocabulary size = <strong>10,000 words</strong></p>
+        <p>Sentence to encode: <em>"People watch movie"</em></p>
+        <p>Vector size = 10,000 positions</p>
+        <p>Positions with 1: only 3 (people, watch, movie)</p>
+        <p>Positions with 0: <strong>9,997 ← all useless zeros</strong></p>
+        <p style="margin-top:10px; color:var(--rust); font-weight:600;">Is this efficient? No! Is it carrying meaningful information? No!</p>
+        <p>This is why we don't use OHE in modern NLP for real data.</p>
+      </div>
+    </div>
+
+    <h3>Out-of-Vocabulary (OOV) Problem — Explained with Example</h3>
+
+    <div class="example-block">
+      <div class="example-label">🔴 OOV Problem — What Happens with New Words</div>
+      <div class="example-body">
+        <p><strong>Training Vocabulary:</strong> [people, watch, like, movie, cricket]</p>
+        <p>Now a new document arrives at inference time:</p>
+        <p style="font-style: italic; font-size: 15px; color: var(--teal);">"People enjoy movie"</p>
+        <p><strong>Problem:</strong> "enjoy" does not exist in the vocabulary!</p>
+        <p>→ We are forced to replace "enjoy" with a 0 (or some special value)</p>
+        <p>→ The word "enjoy" is completely lost — as if it never existed</p>
+        <p style="color: var(--rust); font-weight:600; margin-top:8px;">This is the Out-of-Vocabulary problem. The model has no way to handle words it has never seen.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: BOW -->
+  <div class="section" id="bow">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Bag of Words (BoW)</div>
+        <span class="section-subtitle">Moving from presence to frequency — counting how many times a word appears</span>
+      </div>
+    </div>
+
+    <div class="callout definition">
+      <div class="callout-title">📖 Definition</div>
+      <p><strong>Bag of Words</strong> represents a document as a vector of word <strong>counts</strong> — how many times each vocabulary word appears in that document.</p>
+      <p>It captures <strong>word frequency</strong>, not just presence. If a word appears 3 times, the count is 3.</p>
+    </div>
+
+    <div class="instructor-quote">
+      <p>The idea behind Bag of Words is — if a word appears more times in a document, it is probably more important. We count the occurrence of each word. That's it. Simple counting.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Key Difference from OHE</h3>
+
+    <div class="callout insight">
+      <div class="callout-title">💡 OHE vs BoW — The Core Difference</div>
+      <p><strong>OHE asks:</strong> "Is this word present in the document?" → Answer: 1 or 0</p>
+      <p><strong>BoW asks:</strong> "How many times does this word appear?" → Answer: any count (0, 1, 2, 3...)</p>
+      <p>If a word appears 5 times in a sentence and you use OHE → you write 1. If you use BoW → you write 5.</p>
+    </div>
+
+    <h3>Step-by-Step Process</h3>
+
+    <ol class="steps">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>Collect your documents</strong>
+          <p>Same as before — your input text data (sentences or paragraphs).</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>Build the vocabulary</strong>
+          <p>Same process — extract all unique words. The vocabulary determines vector dimension. Stop words like "a", "the", "and" are typically removed here during preprocessing.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <strong>Count occurrences</strong>
+          <p>For each document, count how many times each vocabulary word appears. That count becomes the vector value for that position.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3>Full Worked Example (from class)</h3>
+
+    <div class="example-block">
+      <div class="example-label">📊 Bag of Words — Complete Example</div>
+      <div class="example-body">
+        <p><strong>Dataset:</strong></p>
+        <div style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:12px 16px; border-radius:4px; margin:10px 0; font-size:13px;">
+          D1: "People watch movie and watch a lot"<br>
+          D2: "People watch cricket and watch cricket"<br>
+          D3: "People like movie"<br>
+          D4: "People like cricket"
+        </div>
+        <p><strong>Vocabulary</strong> (unique words after removing "a"):</p>
+        <p style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:10px 14px; border-radius:4px;">
+          [again, and, cricket, like, lot, movie, people, watch]
+        </p>
+        <p style="font-size:14px; color:#666; margin-top:6px;">Vocabulary size = 8 → Vector dimension = 8</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Doc</th>
+            <th>again</th>
+            <th>and</th>
+            <th>cricket</th>
+            <th>like</th>
+            <th>lot</th>
+            <th>movie</th>
+            <th>people</th>
+            <th>watch</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-highlight">D1</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-1">1</td>
+            <td class="td-1">1</td>
+            <td class="td-1">2</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">D2</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-1">2</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-1">2</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">D3</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-1">1</td>
+            <td class="td-0">0</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">D4</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-1">1</td>
+            <td class="td-0">0</td>
+            <td class="td-0">0</td>
+            <td class="td-1">1</td>
+            <td class="td-0">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Notice D1's "watch" count is <strong>2</strong> (appears twice: "watch movie and watch") and D2's "cricket" count is <strong>2</strong> (appears twice). This is what BoW captures that OHE cannot.</p>
+
+    <h3>Comparing OHE vs BoW Side-by-Side</h3>
+
+    <div class="example-block">
+      <div class="example-label">🔍 Direct Comparison — Sentence: "People watch cricket, people"</div>
+      <div class="example-body">
+        <p><strong>Vocabulary:</strong> [people, watch, like, movie, cricket]</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+          <div>
+            <p style="font-size:13px; font-weight:600; color:var(--teal); margin-bottom:6px;">OHE (presence only)</p>
+            <p style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:10px 12px; border-radius:4px; font-size:13px;">
+              [1, 1, 0, 0, 1]<br>
+              <span style="color:#aaa; font-size:11px;">(people=1, watch=1, cricket=1)</span>
+            </p>
+          </div>
+          <div>
+            <p style="font-size:13px; font-weight:600; color:var(--rust); margin-bottom:6px;">BoW (count)</p>
+            <p style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:10px 12px; border-radius:4px; font-size:13px;">
+              [2, 1, 0, 0, 1]<br>
+              <span style="color:#aaa; font-size:11px;">(people=2, watch=1, cricket=1)</span>
+            </p>
+          </div>
+        </div>
+        <p style="margin-top:12px; font-size:14px; color:#666;">OHE can't tell you "people" appeared twice. BoW can. That's the key difference.</p>
+      </div>
+    </div>
+
+    <h3>Pros &amp; Cons of Bag of Words</h3>
+    <div class="pros-cons">
+      <div class="pros-box">
+        <div class="box-title">✅ Advantages</div>
+        <ul class="check-list">
+          <li>Easy to understand and implement</li>
+          <li>Captures word frequency (more info than OHE)</li>
+          <li>No model training required</li>
+          <li>Works well for classical NLP (text classification, spam detection)</li>
+          <li>Can reflect topic importance via word counts</li>
+        </ul>
+      </div>
+      <div class="cons-box">
+        <div class="box-title">❌ Disadvantages</div>
+        <ul class="check-list">
+          <li><strong>Ignores word order</strong> — "Dog bites man" = "Man bites dog"</li>
+          <li><strong>No semantic understanding</strong> — "like" and "love" are unrelated</li>
+          <li><strong>High dimensionality</strong> — vocab size = vector size</li>
+          <li><strong>Sparse vectors</strong> — mostly zeros for large vocabulary</li>
+          <li><strong>Out-of-Vocabulary problem</strong> — new words not handled</li>
+          <li><strong>Overemphasizes frequent words</strong> — "movie movie movie" gets high count but no meaning</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>The Word Order Problem — A Classic Example</h3>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ Critical Flaw: BoW Ignores Word Order</div>
+      <p>Consider these two very different sentences:</p>
+      <p style="font-family:&#39;JetBrains Mono&#39;,monospace; padding:10px 14px; background:rgba(184,74,42,0.1); border-radius:4px; margin:8px 0;">
+        "Dog bites man" &nbsp;&nbsp; vs &nbsp;&nbsp; "Man bites dog"
+      </p>
+      <p>Vocabulary: [dog, bite, man]</p>
+      <p>BoW vector for BOTH sentences = <strong>[1, 1, 1]</strong></p>
+      <p>Both look identical to the model! The completely opposite meaning is lost.</p>
+    </div>
+
+    <h3>The OOV Problem in BoW</h3>
+    <div class="example-block">
+      <div class="example-label">🔴 Out-of-Vocabulary in Bag of Words</div>
+      <div class="example-body">
+        <p><strong>Training Vocabulary:</strong> [bite, dog, man]</p>
+        <p><strong>New sentence at inference:</strong> "Lion bites man"</p>
+        <p>"Lion" → not in vocabulary → count = <strong>0</strong></p>
+        <p>The word "lion" is completely invisible to the model, even though it changes the entire meaning of the sentence.</p>
+        <p style="color:var(--rust); font-weight:600; margin-top:6px;">Same OOV problem as OHE — a fundamental limitation of all counting-based methods.</p>
+      </div>
+    </div>
+
+    <h3>The Overemphasis Problem</h3>
+    <div class="example-block">
+      <div class="example-label">⚡ Overemphasizing Frequent Words</div>
+      <div class="example-body">
+        <p>Sentence: <em>"Movie movie movie"</em></p>
+        <p>BoW gives "movie" a count of <strong>3</strong> — high frequency = high importance</p>
+        <p>But what is the <strong>meaning</strong> of this sentence? Nothing useful!</p>
+        <p>The model would treat this as if "movie" is extremely important in this context — even though the sentence has no real meaning.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: TFIDF -->
+  <div class="section" id="tfidf">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">TF-IDF</div>
+        <span class="section-subtitle">Term Frequency × Inverse Document Frequency — smarter counting</span>
+      </div>
+    </div>
+
+    <div class="callout definition">
+      <div class="callout-title">📖 Full Form &amp; Definition</div>
+      <p><strong>TF-IDF = Term Frequency × Inverse Document Frequency</strong></p>
+      <p>TF-IDF measures both the <strong>frequency</strong> of a word AND its <strong>importance</strong> across documents. It reduces the weight of very common words (like "the", "and") and increases the weight of informative, rare words.</p>
+    </div>
+
+    <div class="instructor-quote">
+      <p>TF-IDF is not just about counting — it is about asking: how important is this word inside this document? A word that appears everywhere in every document is not very informative. A word that appears often in just one document is very informative for that document. TF-IDF captures exactly this.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>The Two Components</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Component</th><th>What It Measures</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="td-highlight">TF (Term Frequency)</td>
+            <td>How often a word appears in a specific document</td>
+            <td>Words that appear more get higher TF scores</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">IDF (Inverse Document Frequency)</td>
+            <td>How rare a word is across ALL documents</td>
+            <td>Words common across many docs get lower IDF scores (penalized)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Intuition — Why Multiply TF × IDF?</div>
+      <p><strong>Common words across all documents</strong> (e.g., "the", "is", "and") → High TF, but very Low IDF → TF-IDF score stays LOW → These words are downweighted ✓</p>
+      <p><strong>Rare, informative words</strong> (e.g., "machine learning" in a tech doc) → Decent TF, High IDF → TF-IDF score is HIGH → These words are upweighted ✓</p>
+    </div>
+
+    <h3>How TF-IDF Fixes BoW's Weaknesses</h3>
+    <div class="callout success">
+      <div class="callout-title">✓ TF-IDF Improvement Over BoW</div>
+      <p>BoW problem: "movie movie movie" gets high weight even though it's meaningless repetition.</p>
+      <p>TF-IDF fix: If "movie" appears in every single document, IDF penalizes it heavily → overall score drops → it's not treated as more important than it really is.</p>
+      <p>TF-IDF also still suffers from sparse matrices and OOV, but it's significantly better than raw BoW for many NLP tasks.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ Note — Practical in Next Session</div>
+      <p>The instructor introduced TF-IDF conceptually in this session. The full practical implementation with code, formula, and worked examples will be covered in the next class. The assignment on GitHub covers TF-IDF — review it after watching or reading the next session's notes.</p>
+    </div>
+
+    <div class="interview-box">
+      <h3>🎯 Interview Insight — TF-IDF</h3>
+      <div class="interview-q">
+        <div class="q">Q: What is TF-IDF and why is it better than Bag of Words?</div>
+        <div class="a">TF-IDF stands for Term Frequency × Inverse Document Frequency. While Bag of Words only counts how many times a word appears (which overvalues common but meaningless words), TF-IDF also considers how rare the word is across the entire corpus. Words common to all documents (like "the", "and") get penalized, while words unique to specific documents get rewarded. This gives a better representation of what each document is actually about.</div>
+      </div>
+      <div class="interview-q">
+        <div class="q">Q: What are the limitations of TF-IDF?</div>
+        <div class="a">TF-IDF still produces sparse vectors with high dimensionality. It also cannot capture semantic meaning (synonyms look unrelated), does not understand word order or context, and still has the out-of-vocabulary problem for words not seen during training. These limitations drove the development of word embeddings.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4: Practical -->
+  <div class="section" id="practical">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">Practical Implementation</div>
+        <span class="section-subtitle">Step-by-step code walkthroughs from the live session</span>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Instructor's Advice Before Coding</div>
+      <p>Don't code along during the class — you'll fall behind. First, understand the concept. Then, after the session, download the code from GitHub and practice it yourself. AI coding assistants (GitHub Copilot, Claude Code) can help you solve the assignments, but understand the fundamentals first or you won't know what problem you're solving.</p>
+    </div>
+
+    <h3>Setup Required</h3>
+    <div class="callout success">
+      <div class="callout-title">🛠️ Environment Setup</div>
+      <p><strong>Python version:</strong> 3.11 (not 3.12 — GenSim library doesn't support 3.12 yet)</p>
+      <p><strong>Package manager:</strong> UV (ultraviolet)</p>
+      <p><strong>Create virtual environment:</strong> <code style="background:var(--ink);color:var(--gold);padding:2px 8px;border-radius:3px;font-family:&#39;JetBrains Mono&#39;,monospace;font-size:12px;">uv venv env --python [python-3.11-path]</code></p>
+      <p><strong>Activate it:</strong> <code style="background:var(--ink);color:var(--gold);padding:2px 8px;border-radius:3px;font-family:&#39;JetBrains Mono&#39;,monospace;font-size:12px;">source env/bin/activate</code> (Mac/Linux) or <code style="background:var(--ink);color:var(--gold);padding:2px 8px;border-radius:3px;font-family:&#39;JetBrains Mono&#39;,monospace;font-size:12px;">env\Scripts\activate</code> (Windows)</p>
+      <p><strong>Install libraries:</strong> <code style="background:var(--ink);color:var(--gold);padding:2px 8px;border-radius:3px;font-family:&#39;JetBrains Mono&#39;,monospace;font-size:12px;">uv pip install -r requirements.txt</code></p>
+      <p><strong>Select kernel in VS Code:</strong> Choose the <em>env</em> environment when opening any .ipynb notebook file</p>
+    </div>
+
+    <h3>Practical 1 — One-Hot Encoding</h3>
+    <p>The instructor used <code style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:2px 6px; border-radius:3px; font-size:13px;">sklearn.preprocessing.OneHotEncoder</code> to demonstrate OHE. Here is the complete code as taught:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python — One-Hot Encoding</span>
+        <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      </div>
+      <pre><span class="cm"># Step 1: Import the required library</span>
+<span class="kw">from</span> <span class="imp">sklearn.preprocessing</span> <span class="kw">import</span> <span class="fn">OneHotEncoder</span>
+<span class="kw">import</span> <span class="imp">numpy</span> <span class="kw">as</span> <span class="var">np</span>
+
+<span class="cm"># Step 2: Define your documents (dataset)</span>
+<span class="var">documents</span> = [
+    <span class="str">"people watch movie"</span>,
+    <span class="str">"people watch cricket"</span>,
+    <span class="str">"people like movie"</span>,
+    <span class="str">"people like cricket"</span>
+]
+
+<span class="cm"># Step 3: Tokenize — split each sentence into individual words
+# .lower() converts everything to lowercase (prevents "People" ≠ "people")
+# .split() breaks the string on spaces</span>
+<span class="var">tokens</span> = [<span class="var">sentence</span>.<span class="fn">lower</span>().<span class="fn">split</span>() <span class="kw">for</span> <span class="var">sentence</span> <span class="kw">in</span> <span class="var">documents</span>]
+<span class="cm"># Result: [['people','watch','movie'], ['people','watch','cricket'], ...]</span>
+
+<span class="cm"># Step 4: Convert to 2D word matrix (required format for OneHotEncoder)
+# We need each word as a separate row: [['people'], ['watch'], ['movie'], ...]</span>
+<span class="var">all_words</span> = [[<span class="var">word</span>] <span class="kw">for</span> <span class="var">sentence</span> <span class="kw">in</span> <span class="var">tokens</span> <span class="kw">for</span> <span class="var">word</span> <span class="kw">in</span> <span class="var">sentence</span>]
+
+<span class="cm"># Step 5: Create the encoder object
+# sparse_output=False → returns a readable NumPy array (not a compressed sparse matrix)</span>
+<span class="var">encoder</span> = <span class="fn">OneHotEncoder</span>(<span class="var">sparse_output</span>=<span class="num">False</span>)
+
+<span class="cm"># Step 6: Fit — encoder learns the vocabulary from your data</span>
+<span class="var">encoder</span>.<span class="fn">fit</span>(<span class="var">all_words</span>)
+
+<span class="cm"># Step 7: View the vocabulary (alphabetically sorted)</span>
+<span class="fn">print</span>(<span class="str">"Vocabulary:"</span>, <span class="var">encoder</span>.<span class="var">categories_</span>[<span class="num">0</span>])
+<span class="cm"># Output: ['cricket' 'like' 'movie' 'people' 'watch']</span>
+
+<span class="cm"># Step 8: Transform — convert each sentence to one-hot vectors</span>
+<span class="kw">for</span> <span class="var">sentence</span> <span class="kw">in</span> <span class="var">tokens</span>:
+    <span class="var">encoded</span> = <span class="var">encoder</span>.<span class="fn">transform</span>([[<span class="var">word</span>] <span class="kw">for</span> <span class="var">word</span> <span class="kw">in</span> <span class="var">sentence</span>])
+    <span class="fn">print</span>(<span class="str">f"Sentence: {sentence}"</span>)
+    <span class="fn">print</span>(<span class="str">f"One-Hot Matrix:\n{encoded}\n"</span>)</pre>
+    </div>
+
+    <h4>Understanding the Code — What Does Each Step Do?</h4>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Step</th><th>Code</th><th>What It Does</th></tr></thead>
+        <tbody>
+          <tr><td class="td-highlight">Tokenize</td><td><code style="font-size:12px;">.lower().split()</code></td><td>Converts sentence to lowercase and splits into list of words. "People Watch" → ["people", "watch"]</td></tr>
+          <tr><td class="td-highlight">2D Format</td><td><code style="font-size:12px;">[[word] for word...]</code></td><td>OHE requires each word wrapped in a list: [["people"], ["watch"]]</td></tr>
+          <tr><td class="td-highlight">sparse_output=False</td><td><code style="font-size:12px;">OneHotEncoder(sparse_output=False)</code></td><td>Returns dense NumPy array so we can easily read the output. Default is sparse (compressed format).</td></tr>
+          <tr><td class="td-highlight">fit()</td><td><code style="font-size:12px;">encoder.fit(data)</code></td><td>Scans all words, learns vocabulary. No transformation yet — just learning.</td></tr>
+          <tr><td class="td-highlight">transform()</td><td><code style="font-size:12px;">encoder.transform(data)</code></td><td>Applies the learned vocabulary to actually create the one-hot vectors.</td></tr>
+          <tr><td class="td-highlight">fit_transform()</td><td><code style="font-size:12px;">encoder.fit_transform(data)</code></td><td>Does fit + transform in one single step.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">🔑 Understanding fit() vs transform() — The scikit-learn Pattern</div>
+      <p><strong>fit(data)</strong> → "Learn from this data." The encoder reads all the words, builds a vocabulary, validates formats. Nothing is converted yet. Think of it as preparation.</p>
+      <p><strong>transform(data)</strong> → "Now apply what you learned." Takes data and converts it into vectors using the vocabulary created by fit().</p>
+      <p><strong>fit_transform(data)</strong> → Does both in one call. Convenient shortcut when fitting and transforming on the same data.</p>
+      <p>This pattern (fit/transform/fit_transform) is standard across ALL of scikit-learn — you'll see it in every class, not just OHE.</p>
+    </div>
+
+    <h3>Practical 2 — Bag of Words</h3>
+    <p>The instructor used <code style="font-family:&#39;JetBrains Mono&#39;,monospace; background:var(--cream); padding:2px 6px; border-radius:3px; font-size:13px;">sklearn.feature_extraction.text.CountVectorizer</code> for BoW:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python — Bag of Words (CountVectorizer)</span>
+        <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      </div>
+      <pre><span class="cm"># Import CountVectorizer — the BoW class in sklearn</span>
+<span class="kw">from</span> <span class="imp">sklearn.feature_extraction.text</span> <span class="kw">import</span> <span class="fn">CountVectorizer</span>
+
+<span class="cm"># Define documents — same dataset as before</span>
+<span class="var">documents</span> = [
+    <span class="str">"people watch movie"</span>,
+    <span class="str">"people watch cricket"</span>,
+    <span class="str">"people like movie"</span>,
+    <span class="str">"people like cricket"</span>
+]
+
+<span class="cm"># Create CountVectorizer object</span>
+<span class="var">bow</span> = <span class="fn">CountVectorizer</span>()
+
+<span class="cm"># fit_transform: learn vocabulary AND create word count matrix in one step
+# No need for manual tokenization — CountVectorizer handles it internally</span>
+<span class="var">bow_matrix</span> = <span class="var">bow</span>.<span class="fn">fit_transform</span>(<span class="var">documents</span>)
+
+<span class="cm"># View the BoW matrix as an array</span>
+<span class="fn">print</span>(<span class="str">"BoW Matrix:\n"</span>, <span class="var">bow_matrix</span>.<span class="fn">toarray</span>())
+
+<span class="cm"># View the vocabulary (features)
+# Note: alphabetically sorted — this determines column order in the matrix</span>
+<span class="fn">print</span>(<span class="str">"\nVocabulary:"</span>, <span class="var">bow</span>.<span class="fn">get_feature_names_out</span>())
+
+<span class="cm"># Example: Transform a completely new sentence
+# Words not in vocabulary get count = 0</span>
+<span class="var">new_sentence</span> = [<span class="str">"people enjoy movie"</span>]
+<span class="var">new_vector</span> = <span class="var">bow</span>.<span class="fn">transform</span>(<span class="var">new_sentence</span>)
+<span class="fn">print</span>(<span class="str">"\nNew sentence vector:"</span>, <span class="var">new_vector</span>.<span class="fn">toarray</span>())
+<span class="cm"># "enjoy" is OOV — its count will be 0 in the output</span></pre>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Key Difference in How CountVectorizer Works vs OneHotEncoder</div>
+      <p>With <strong>OneHotEncoder</strong>, you had to manually tokenize your sentences and create a 2D word array before passing to fit().</p>
+      <p>With <strong>CountVectorizer</strong>, you pass the <em>raw sentences directly</em> — it handles tokenization internally. The library was designed this way by its creators.</p>
+      <p>This is just a design choice by the library authors, not something conceptually different about OHE vs BoW.</p>
+    </div>
+
+    <h3>Understanding the sklearn Library (scikit-learn)</h3>
+
+    <div class="callout definition">
+      <div class="callout-title">📚 What is scikit-learn (sklearn)?</div>
+      <p><strong>Full name:</strong> scikit-learn</p>
+      <p><strong>Purpose:</strong> The primary Python library for classical machine learning — model training, feature engineering, evaluation, and preprocessing.</p>
+      <p><strong>Key characteristics:</strong> Open source (code is on GitHub), has a consistent API (fit/transform/predict pattern), and has existed since around 2010–2011.</p>
+      <p>OHE, BoW, TF-IDF, and most classical ML algorithms (Logistic Regression, Naive Bayes, Decision Trees, etc.) are all available inside sklearn.</p>
+      <p><strong>Important:</strong> After this chapter, we move to more advanced GenAI-specific libraries like LangChain, LangGraph, etc. sklearn is the classical foundation.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 5: Embedding preview -->
+  <div class="section" id="embedding">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div>
+        <div class="section-title">Introduction to Embeddings</div>
+        <span class="section-subtitle">Why encoding wasn't enough, and what came next</span>
+      </div>
+    </div>
+
+    <div class="instructor-quote">
+      <p>Everything we've learned so far — OHE, BoW, TF-IDF — these are the classical approaches. They work, but they don't understand meaning. Embeddings are completely different. They use neural networks to generate vectors that actually capture the semantic relationship between words. That is the revolution.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Why Embeddings Are Fundamentally Different</h3>
+
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead><tr><th>Property</th><th>OHE / BoW / TF-IDF</th><th>Embeddings (Word2Vec, BERT, etc.)</th></tr></thead>
+        <tbody>
+          <tr><td class="td-highlight">Semantic Meaning</td><td class="td-0">❌ None</td><td class="td-1">✅ Captured</td></tr>
+          <tr><td class="td-highlight">Word Order / Context</td><td class="td-0">❌ Ignored</td><td class="td-1">✅ Understood</td></tr>
+          <tr><td class="td-highlight">Vector Type</td><td class="td-0">Sparse (mostly 0s)</td><td class="td-1">Dense (all meaningful values)</td></tr>
+          <tr><td class="td-highlight">Training Required</td><td class="td-0">❌ None</td><td class="td-1">✅ Neural network training</td></tr>
+          <tr><td class="td-highlight">"like" vs "love"</td><td class="td-0">Completely different vectors</td><td class="td-1">Very close vectors (similar meaning)</td></tr>
+          <tr><td class="td-highlight">OOV Handling</td><td class="td-0">❌ Can't handle</td><td class="td-1">✅ Subword tokenization helps</td></tr>
+          <tr><td class="td-highlight">Typical dimension</td><td class="td-0">Equal to vocab size (huge)</td><td class="td-1">Fixed (e.g., 128, 256, 768)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Two Types of Embeddings (Upcoming Sessions)</h3>
+
+    <h4>1. Word2Vec</h4>
+    <div class="callout definition">
+      <div class="callout-title">📌 Word2Vec — The Foundation</div>
+      <p>Introduced by Google researchers (~2013). A neural network trained to predict context words given a target word (or vice versa). After training, each word has a dense vector that captures its meaning.</p>
+      <p>Famous demonstration: <code style="font-family:&#39;JetBrains Mono&#39;,monospace; font-size:13px;">vector("King") - vector("Man") + vector("Woman") ≈ vector("Queen")</code></p>
+      <p>This shows that relationships between words are encoded in the vector space — something no classical encoding can do.</p>
+      <p><strong>Library used:</strong> GenSim (requires Python 3.11)</p>
+    </div>
+
+    <h4>2. Transformer-Based Models (SOTA)</h4>
+    <div class="callout definition">
+      <div class="callout-title">📌 Transformer-Based Embeddings — State of the Art</div>
+      <p>Built on the Transformer architecture (2017 — "Attention is All You Need" paper). Models like BERT, GPT, Sentence-BERT, etc.</p>
+      <p>Key advantage: Context-aware embeddings. The word "bank" in "river bank" gets a different vector than "bank" in "bank account" — because context is considered.</p>
+      <p>This is what powers all modern LLMs — ChatGPT, Claude, Gemini, Llama — and what you'll use in RAG systems.</p>
+      <p><strong>Why you must learn this:</strong> Every RAG system, every semantic search, every vector database (Pinecone, Chroma, Qdrant) uses transformer-based embeddings.</p>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">🔮 Where Embeddings Appear in GenAI (Coming in Later Modules)</div>
+      <p><strong>RAG:</strong> Documents are split into chunks → each chunk is embedded → stored in a vector database → at query time, query is embedded → most similar chunks retrieved → fed to LLM for answering.</p>
+      <p><strong>Semantic Search:</strong> Search query and documents are both embedded → cosine similarity finds closest documents.</p>
+      <p><strong>LLM internals:</strong> Every LLM converts input tokens to embeddings as its very first step before any processing.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 6: Interview Prep -->
+  <div class="section" id="interview">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div>
+        <div class="section-title">Interview Preparation</div>
+        <span class="section-subtitle">Real questions from the instructor's own GenAI interview experience</span>
+      </div>
+    </div>
+
+    <div class="interview-box">
+      <h3>🎯 Expected Interview Questions — Encoding &amp; Embedding</h3>
+
+      <div class="interview-q">
+        <div class="q">Q1: What is One-Hot Encoding? When do you use it?</div>
+        <div class="a">One-Hot Encoding represents words as binary vectors — 1 if the word is present, 0 if absent. Historically used for text classification with classical ML algorithms like Logistic Regression and Naive Bayes. In deep learning (RNN/LSTM), each word gets its own one-hot vector (word-level representation).</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q2: What is the Out-of-Vocabulary (OOV) problem? How does it affect OHE and BoW?</div>
+        <div class="a">OOV occurs when a word appears at inference time that was not in the training vocabulary. Since both OHE and BoW can only represent words they've seen, any new word gets a vector of zeros — it's completely invisible. Modern embeddings partially solve this using subword tokenization (e.g., BPE — Byte Pair Encoding used in GPT).</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q3: What is the difference between One-Hot Encoding and Bag of Words?</div>
+        <div class="a">Both convert text to vectors. OHE represents only presence (0 or 1). BoW represents count/frequency (0, 1, 2, 3...). If a word appears 3 times in a document, OHE gives it a 1, BoW gives it a 3. BoW captures more information but still has no semantic understanding.</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q4: What is TF-IDF? How does it improve upon BoW?</div>
+        <div class="a">TF-IDF = Term Frequency × Inverse Document Frequency. BoW only counts frequency — TF-IDF also weights that frequency by how rare the word is across all documents. Common words like "the", "is" appear everywhere so they get a very low IDF score, reducing their overall TF-IDF score. This gives more meaningful weights to actually informative words.</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q5: What is a sparse matrix and why is it a problem?</div>
+        <div class="a">A sparse matrix is one where most values are zero. Both OHE and BoW produce sparse matrices because any given sentence uses only a tiny fraction of the full vocabulary. For a 50,000-word vocabulary, a 3-word sentence produces a vector with 49,997 zeros — wasting memory and computation with no useful information.</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q6: Why did embeddings replace classical encoding methods?</div>
+        <div class="a">Classical methods (OHE, BoW, TF-IDF) have three fundamental problems: they produce sparse vectors, they have no semantic understanding (synonyms look completely different), and they ignore word order. Embeddings solve all three — they produce dense, low-dimensional vectors where semantically similar words are close in vector space, and transformer-based embeddings capture context/order information.</div>
+      </div>
+
+      <div class="interview-q">
+        <div class="q">Q7: What is the role of embedding in RAG systems? (Advanced)</div>
+        <div class="a">In RAG, every document chunk is converted to an embedding vector and stored in a vector database. When a user asks a question, the question is also embedded. We then find document chunks whose embeddings are most similar to the question embedding (using cosine similarity), retrieve them, and pass them as context to the LLM to generate an accurate answer.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 7: Roadmap -->
+  <div class="section" id="roadmap">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div>
+        <div class="section-title">Course Roadmap</div>
+        <span class="section-subtitle">Where we are and where we're going</span>
+      </div>
+    </div>
+
+    <div class="roadmap">
+      <div class="roadmap-item">
+        <div class="rm-dot current">✓</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>📍 Encoding &amp; Embedding (Current — Day 1)</strong>
+          <span>One-Hot Encoding, Bag of Words, TF-IDF basics, practical code</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot current">→</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Encoding &amp; Embedding (Day 2 — Tomorrow)</strong>
+          <span>TF-IDF practical, Word2Vec, SOTA transformer-based embeddings, assignment walkthrough</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">3</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Transformer Architecture</strong>
+          <span>Attention mechanism, encoder-decoder, self-attention — the engine behind all modern LLMs</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">4</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Core Generative AI — Module 3 (The Real GenAI Starts Here)</strong>
+          <span>LLM overview, OpenAI API, Anthropic API, different model families</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">5</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Fine-Tuning</strong>
+          <span>Knowledge tuning, preference tuning, LoRA — adapting pre-trained models to specific tasks</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">6</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>RAG &amp; Multimodal RAG</strong>
+          <span>Vector databases, semantic retrieval, combining images + text</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">7</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Agents &amp; Agentic AI</strong>
+          <span>Multi-agent systems, LangGraph, MCP, tool calling, autonomous workflows</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">8</div>
+        <div class="rm-line"></div>
+        <div class="rm-content">
+          <strong>Cloud Integration</strong>
+          <span>GCP Vertex AI, Azure AI Foundry, AWS Bedrock — deploying GenAI at scale</span>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-dot future">9</div>
+        <div class="rm-content">
+          <strong>End-to-End Projects</strong>
+          <span>Multiple industry-grade projects applying everything learned</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">📌 Assignment Due After This Session</div>
+      <p>On GitHub repo (Full Stack GenAI Bootcamp 1.0 → Class 4 folder), download the text and coding assignment. It covers:</p>
+      <p>① Collecting data for text embedding &nbsp; ② Text preprocessing &nbsp; ③ Vocabulary creation &nbsp; ④ One-Hot Encoding &nbsp; ⑤ Bag of Words &nbsp; ⑥ TF-IDF &nbsp; ⑦ Feature engineering</p>
+      <p>Solve it using an AI coding assistant (Copilot, Claude Code) — but understand the concepts first so you can write the right prompts and verify the output.</p>
+    </div>
+  </div>
+
+  <!-- Final summary table -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">✓</div>
+      <div>
+        <div class="section-title">Complete Comparison — All Methods</div>
+        <span class="section-subtitle">Your quick reference cheat sheet</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>One-Hot Encoding</th>
+            <th>Bag of Words</th>
+            <th>TF-IDF</th>
+            <th>Embeddings (Word2Vec / BERT)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="td-highlight">Vector Values</td><td>0 or 1 (binary)</td><td>Integer counts</td><td>Decimal weights</td><td>Floats (dense)</td></tr>
+          <tr><td class="td-highlight">Captures</td><td>Presence only</td><td>Frequency</td><td>Importance × Frequency</td><td>Meaning &amp; Context</td></tr>
+          <tr><td class="td-highlight">Semantic Meaning</td><td class="td-0">❌ None</td><td class="td-0">❌ None</td><td class="td-0">❌ None</td><td class="td-1">✅ Yes</td></tr>
+          <tr><td class="td-highlight">Word Order</td><td class="td-0">❌ Ignored</td><td class="td-0">❌ Ignored</td><td class="td-0">❌ Ignored</td><td class="td-1">✅ Captured (Transformers)</td></tr>
+          <tr><td class="td-highlight">Sparse/Dense</td><td>Sparse</td><td>Sparse</td><td>Sparse</td><td>Dense</td></tr>
+          <tr><td class="td-highlight">Training</td><td>None needed</td><td>None needed</td><td>None needed</td><td>Neural net training</td></tr>
+          <tr><td class="td-highlight">OOV Problem</td><td class="td-0">Yes (serious)</td><td class="td-0">Yes (serious)</td><td class="td-0">Yes (serious)</td><td>Mostly handled</td></tr>
+          <tr><td class="td-highlight">Era</td><td>Pre-2015</td><td>Pre-2015</td><td>2015–2019</td><td>2013–present</td></tr>
+          <tr><td class="td-highlight">sklearn Class</td><td>OneHotEncoder</td><td>CountVectorizer</td><td>TfidfVectorizer</td><td>Gensim / HuggingFace</td></tr>
+          <tr><td class="td-highlight">Used in GenAI for</td><td>Mostly historical</td><td>BM25 (RAG retrieval)</td><td>BM25 &amp; retrieval</td><td>RAG, semantic search, LLMs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>Full Stack GenAI Bootcamp 1.0 &nbsp;·&nbsp; Session: <strong>Encoding &amp; Embedding — Day 1</strong> &nbsp;·&nbsp; Instructor: <strong>Sunny Savita</strong></p>
+  <p style="margin-top:6px;">GitHub: <strong>Full Stack GenAI Bootcamp 1.0</strong> &nbsp;·&nbsp; Platform: <strong>krishnaik.academy</strong></p>
+</footer>
+
+
+
+</body></html>

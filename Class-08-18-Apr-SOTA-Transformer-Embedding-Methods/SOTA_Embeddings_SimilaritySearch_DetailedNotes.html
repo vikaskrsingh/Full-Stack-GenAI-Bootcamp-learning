@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOTA Embeddings & Similarity Search — Class 5 Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf8;
+    --ink: #111110;
+    --surface: #ffffff;
+    --surface2: #f4f3ef;
+    --border: #e5e2d9;
+    --muted: #7a7567;
+    --dim: #c4bfb4;
+
+    --teal: #097b6e;
+    --teal-bg: #e6f4f2;
+    --gold: #9a6b00;
+    --gold-bg: #fef6e0;
+    --red: #a33030;
+    --red-bg: #fdeaea;
+    --purple: #5c3d9c;
+    --purple-bg: #eeebf9;
+    --blue: #1d55a0;
+    --blue-bg: #e5eef9;
+    --green: #1a6b38;
+    --green-bg: #e3f5eb;
+    --orange: #b05000;
+    --orange-bg: #fdf0e6;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; line-height:1.8; }
+
+  /* ── HERO ── */
+  .hero {
+    background:var(--ink);
+    color:#fafaf8;
+    padding: 64px 44px 56px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before {
+    content:'';
+    position:absolute; top:0; right:0;
+    width:50%; height:100%;
+    background: repeating-linear-gradient(
+      -45deg, transparent, transparent 20px,
+      rgba(255,255,255,0.015) 20px, rgba(255,255,255,0.015) 22px
+    );
+  }
+  .hero-inner { max-width:940px; margin:0 auto; position:relative; z-index:1; }
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(9,123,110,0.3); border:1px solid rgba(9,123,110,0.6);
+    color:#5fd4c8; border-radius:4px;
+    padding:4px 14px; font-family:'Fira Code',monospace;
+    font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    margin-bottom:24px;
+  }
+  h1 {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(30px,5.5vw,60px);
+    font-weight:900; line-height:1.08;
+    margin-bottom:18px;
+  }
+  h1 .a1 { color:#5fd4c8; }
+  h1 .a2 { color:#f0c060; }
+  .hero-sub { font-size:15px; color:rgba(250,250,248,0.6); max-width:580px; margin-bottom:28px; font-weight:300; line-height:1.65; }
+  .hero-pills { display:flex; flex-wrap:wrap; gap:10px; }
+  .pill { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:5px 13px; font-family:'Fira Code',monospace; font-size:11px; color:rgba(250,250,248,0.5); }
+  .pill strong { color:rgba(250,250,248,0.85); }
+
+  /* ── NAV ── */
+  .nav { background:var(--surface); border-bottom:2px solid var(--ink); padding:0 44px; display:flex; align-items:center; gap:0; overflow-x:auto; position:sticky; top:0; z-index:100; }
+  .nav-lbl { font-family:'Fira Code',monospace; font-size:10px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; padding:14px 12px 14px 0; border-right:1px solid var(--border); margin-right:10px; white-space:nowrap; flex-shrink:0; }
+  .nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:14px 12px; white-space:nowrap; border-bottom:2px solid transparent; transition:all 0.2s; flex-shrink:0; font-weight:500; }
+  .nav a:hover { color:var(--teal); border-bottom-color:var(--teal); }
+
+  /* ── MAIN ── */
+  .main { max-width:940px; margin:0 auto; padding:52px 32px; }
+
+  /* ── INTRO ── */
+  .intro { background:var(--blue-bg); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:22px 26px; margin-bottom:52px; }
+  .intro p { font-size:15.5px; margin-bottom:8px; font-weight:300; }
+  .intro p:last-child { margin-bottom:0; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom:68px; scroll-margin-top:58px; }
+  .sec-head { display:flex; align-items:flex-start; gap:16px; margin-bottom:28px; padding-bottom:14px; border-bottom:2px solid var(--ink); }
+  .sec-num { font-family:'Fira Code',monospace; font-size:11px; font-weight:500; padding:4px 10px; border-radius:3px; flex-shrink:0; margin-top:4px; }
+  .n-t { background:var(--teal); color:#fff; }
+  .n-g { background:var(--gold); color:#fff; }
+  .n-p { background:var(--purple); color:#fff; }
+  .n-r { background:var(--red); color:#fff; }
+  .n-b { background:var(--blue); color:#fff; }
+  .n-gr { background:var(--green); color:#fff; }
+  .n-o { background:var(--orange); color:#fff; }
+  .sec-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; line-height:1.2; }
+  .sec-sub { font-size:13px; color:var(--muted); display:block; margin-top:4px; font-weight:400; }
+
+  h3 { font-family:'Playfair Display',serif; font-size:19px; font-weight:700; margin:32px 0 10px; }
+  h4 { font-family:'Fira Code',monospace; font-size:11px; font-weight:500; color:var(--teal); letter-spacing:1.5px; text-transform:uppercase; margin:22px 0 8px; }
+  p { margin-bottom:12px; font-weight:300; }
+  p strong { font-weight:600; }
+
+  /* ── QUOTE ── */
+  .quote { background:var(--ink); border-radius:6px; padding:20px 24px; margin:20px 0; }
+  .quote p { color:rgba(250,250,248,0.78); font-style:italic; font-size:15.5px; margin:0; padding-left:14px; border-left:2px solid #5fd4c8; font-weight:300; line-height:1.7; }
+  .quote cite { display:block; padding-left:14px; margin-top:8px; font-size:11px; font-style:normal; font-family:'Fira Code',monospace; color:#5fd4c8; letter-spacing:1px; }
+
+  /* ── CALLOUT ── */
+  .callout { border-radius:6px; padding:18px 22px; margin:18px 0; border-left:4px solid; }
+  .callout-lbl { font-family:'Fira Code',monospace; font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
+  .callout p { font-size:15.5px; margin-bottom:6px; }
+  .callout p:last-child { margin-bottom:0; }
+  .c-t  { background:var(--teal-bg);   border-color:var(--teal);   } .c-t  .callout-lbl { color:var(--teal);   }
+  .c-g  { background:var(--gold-bg);   border-color:var(--gold);   } .c-g  .callout-lbl { color:var(--gold);   }
+  .c-r  { background:var(--red-bg);    border-color:var(--red);    } .c-r  .callout-lbl { color:var(--red);    }
+  .c-p  { background:var(--purple-bg); border-color:var(--purple); } .c-p  .callout-lbl { color:var(--purple); }
+  .c-b  { background:var(--blue-bg);   border-color:var(--blue);   } .c-b  .callout-lbl { color:var(--blue);   }
+  .c-gr { background:var(--green-bg);  border-color:var(--green);  } .c-gr .callout-lbl { color:var(--green);  }
+  .c-o  { background:var(--orange-bg); border-color:var(--orange); } .c-o  .callout-lbl { color:var(--orange); }
+
+  /* ── EXAMPLE BLOCK ── */
+  .ex { background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin:18px 0; box-shadow:0 2px 8px rgba(17,17,16,0.05); }
+  .ex-head { background:var(--ink); padding:8px 18px; font-family:'Fira Code',monospace; font-size:11px; color:#f0c060; letter-spacing:1.5px; text-transform:uppercase; }
+  .ex-body { padding:18px 22px; }
+  .ex-body p { font-size:15.5px; margin-bottom:8px; }
+  .ex-body p:last-child { margin-bottom:0; }
+
+  /* ── CODE ── */
+  .code-wrap { background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden; margin:18px 0; }
+  .code-head { background:#161b22; padding:10px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363d; }
+  .code-lang { font-family:'Fira Code',monospace; font-size:11px; color:#5fd4c8; letter-spacing:2px; text-transform:uppercase; }
+  .dots { display:flex; gap:6px; }
+  .d { width:10px; height:10px; border-radius:50%; }
+  .dr{background:#ff5f56;} .dy{background:#ffbd2e;} .dg{background:#27c93f;}
+  pre { padding:22px; overflow-x:auto; font-family:'Fira Code',monospace; font-size:13px; line-height:1.85; color:#adbac7; }
+  .kw{color:#f47067;} .fn{color:#79c0ff;} .str{color:#96d0ff;}
+  .cm{color:#484f58;font-style:italic;} .var{color:#ffa657;} .num{color:#f69d50;}
+  .imp{color:#56d364;} .cls{color:#e8d44d;}
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; margin:18px 0; border-radius:6px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:14.5px; background:var(--surface); }
+  thead tr { background:var(--ink); }
+  thead th { padding:12px 16px; text-align:left; font-family:'Fira Code',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(250,250,248,0.65); font-weight:500; }
+  tbody td { padding:10px 16px; border-bottom:1px solid var(--border); font-weight:300; vertical-align:top; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:nth-child(even) { background:var(--surface2); }
+  .tc { color:var(--teal); font-weight:600; } .tg { color:var(--green); font-weight:500; } .tr { color:var(--red); font-weight:500; }
+  .tag-free { display:inline-block; background:var(--green-bg); color:var(--green); border:1px solid var(--green); border-radius:3px; padding:1px 6px; font-size:11px; font-family:'Fira Code',monospace; font-weight:500; }
+  .tag-paid { display:inline-block; background:var(--red-bg); color:var(--red); border:1px solid var(--red); border-radius:3px; padding:1px 6px; font-size:11px; font-family:'Fira Code',monospace; font-weight:500; }
+  .tag-partial { display:inline-block; background:var(--gold-bg); color:var(--gold); border:1px solid var(--gold); border-radius:3px; padding:1px 6px; font-size:11px; font-family:'Fira Code',monospace; font-weight:500; }
+
+  /* ── STEPS ── */
+  .steps { list-style:none; margin:16px 0; }
+  .steps li { display:flex; gap:14px; margin-bottom:16px; align-items:flex-start; }
+  .s-num { width:28px; height:28px; background:var(--teal); color:#fff; font-family:'Fira Code',monospace; font-size:12px; font-weight:600; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .s-body { flex:1; }
+  .s-body strong { display:block; margin-bottom:3px; font-weight:600; }
+  .s-body p { font-size:15.5px; margin-bottom:0; color:var(--muted); }
+
+  /* ── FORMULA ── */
+  .formula { background:var(--surface); border:2px solid var(--ink); border-radius:6px; padding:20px 26px; margin:18px 0; text-align:center; }
+  .formula-title { font-family:'Fira Code',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+  .formula-body { font-family:'Fira Code',monospace; font-size:17px; color:var(--ink); line-height:1.7; }
+  .f-t { color:var(--teal); font-weight:600; }
+  .f-g { color:var(--gold); font-weight:600; }
+  .formula-note { font-size:13px; color:var(--muted); margin-top:10px; font-style:italic; font-family:'Plus Jakarta Sans',sans-serif; }
+
+  /* ── PROS/CONS ── */
+  .pc-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0; }
+  @media(max-width:600px){.pc-grid{grid-template-columns:1fr;}}
+  .pc { border-radius:6px; padding:18px; border:1px solid; }
+  .pc-g { background:var(--green-bg); border-color:var(--green); }
+  .pc-r { background:var(--red-bg); border-color:var(--red); }
+  .pc-title { font-family:'Fira Code',monospace; font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .pc-g .pc-title { color:var(--green); } .pc-r .pc-title { color:var(--red); }
+  .pc-list { list-style:none; }
+  .pc-list li { font-size:15px; font-weight:300; margin-bottom:8px; padding-left:20px; position:relative; }
+  .pc-list li::before { position:absolute; left:0; }
+  .pc-g .pc-list li::before { content:'✓'; color:var(--green); font-weight:700; }
+  .pc-r .pc-list li::before { content:'✗'; color:var(--red); font-weight:700; }
+
+  /* ── SIMILARITY RANGE VISUAL ── */
+  .sim-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:18px 0; }
+  @media(max-width:600px){.sim-cards{grid-template-columns:1fr;}}
+  .sim-card { border-radius:6px; padding:18px; border:1px solid; }
+  .sim-card h4 { margin:0 0 8px; font-family:'Fira Code',monospace; font-size:13px; text-transform:none; letter-spacing:0; font-weight:600; }
+  .sim-card .range { font-family:'Fira Code',monospace; font-size:20px; font-weight:600; margin:8px 0; }
+  .sim-card p { font-size:14px; color:var(--muted); margin:0; }
+  .sc-t { background:var(--teal-bg); border-color:var(--teal); } .sc-t h4, .sc-t .range { color:var(--teal); }
+  .sc-g { background:var(--gold-bg); border-color:var(--gold); } .sc-g h4, .sc-g .range { color:var(--gold); }
+  .sc-p { background:var(--purple-bg); border-color:var(--purple); } .sc-p h4, .sc-p .range { color:var(--purple); }
+
+  /* ── INTERVIEW ── */
+  .interview { background:var(--surface); border:2px solid var(--ink); border-radius:8px; padding:28px 30px; margin:28px 0; }
+  .interview h3 { color:var(--gold); margin-top:0; }
+  .iq { border-left:3px solid var(--gold); padding:12px 16px; margin-bottom:14px; background:var(--gold-bg); border-radius:0 5px 5px 0; }
+  .iq .q { font-family:'Fira Code',monospace; font-size:11px; color:var(--gold); margin-bottom:6px; letter-spacing:1px; }
+  .iq .a { font-size:15px; color:var(--muted); line-height:1.65; font-weight:300; }
+
+  /* ── ROADMAP ── */
+  .rm-wrap { margin:16px 0; }
+  .rm-item { display:flex; gap:14px; }
+  .rm-left { display:flex; flex-direction:column; align-items:center; width:32px; flex-shrink:0; }
+  .rm-dot { width:32px; height:32px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-family:'Fira Code',monospace; font-size:11px; font-weight:700; flex-shrink:0; }
+  .rm-done { background:var(--teal); color:#fff; }
+  .rm-now  { background:var(--gold); color:#fff; }
+  .rm-next { background:var(--surface2); border:1px solid var(--border); color:var(--dim); }
+  .rm-line { width:1px; background:var(--border); flex:1; min-height:20px; }
+  .rm-body { padding:4px 0 24px; }
+  .rm-body strong { display:block; font-size:15px; font-weight:600; margin-bottom:2px; }
+  .rm-body span { font-size:13px; color:var(--muted); }
+
+  /* ── DIVIDER ── */
+  .div { border:none; border-top:1px solid var(--border); margin:52px 0; }
+
+  code { font-family:'Fira Code',monospace; font-size:12.5px; background:var(--surface2); border:1px solid var(--border); padding:2px 7px; border-radius:3px; color:var(--teal); }
+
+  /* ── MODEL CARD GRID ── */
+  .model-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin:18px 0; }
+  .model-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:18px; }
+  .model-card-title { font-weight:600; font-size:15px; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .model-card p { font-size:14px; color:var(--muted); margin:0 0 8px; }
+  .model-card-meta { font-family:'Fira Code',monospace; font-size:11px; color:var(--dim); }
+
+  footer { background:var(--ink); color:rgba(250,250,248,0.35); padding:28px 44px; text-align:center; font-family:'Fira Code',monospace; font-size:11px; letter-spacing:1px; }
+  footer strong { color:#5fd4c8; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">📡 Class 5 (Session 8) — 18th April</div>
+    <h1>SOTA<br><span class="a1">Embeddings</span> &<br><span class="a2">Similarity Search</span></h1>
+    <p class="hero-sub">Complete classroom notes covering every SOTA embedding model, how to access Hugging Face, Gemini, and OpenAI APIs, image embedding with CLIP, cosine similarity, dot product, Euclidean distance, and keyword vs semantic search — fully coded and explained.</p>
+    <div class="hero-pills">
+      <div class="pill">🎙️ Instructor: <strong>Sunny Savita</strong></div>
+      <div class="pill">📅 Date: <strong>18th April 2026</strong></div>
+      <div class="pill">📁 Folder: <strong>Class 8 — SOTA Transformer Embedding</strong></div>
+      <div class="pill">🔑 New: <strong>HF + Gemini + OpenAI API Keys</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-lbl">Jump To</span>
+  <a href="#context">Why SOTA?</a>
+  <a href="#sota-overview">SOTA Overview</a>
+  <a href="#sentence-transformer">Sentence Transformers</a>
+  <a href="#api-keys">API Keys Setup</a>
+  <a href="#gemini">Gemini Embedding</a>
+  <a href="#openai">OpenAI Embedding</a>
+  <a href="#image">Image Embedding (CLIP)</a>
+  <a href="#similarity">Similarity Search</a>
+  <a href="#keyword">Keyword vs Semantic</a>
+  <a href="#comparison">Big Comparison</a>
+  <a href="#interview">Interview Q&A</a>
+  <a href="#roadmap">Roadmap</a>
+</nav>
+
+<div class="main">
+
+  <!-- INTRO -->
+  <div class="intro">
+    <p><strong>This is Class 5 (Session 8, 18th April).</strong> Module 1 (Encoding & Embedding) is now complete. Today's class bridges the classical Word2Vec world with the modern GenAI world. You will see how to generate embeddings using real production-grade models — Hugging Face Sentence Transformers, Google Gemini, and OpenAI — and learn how to measure similarity between those embeddings.</p>
+    <p>Everything covered today is <strong>directly used in RAG systems</strong>. The instructor emphasised: "From now onwards, you will have to be a little serious. This concept will be directly used at very important places in RAG and Agentic chapters."</p>
+    <p>GitHub folder: <strong>Class 8, 18 April — SOTA Transformer Embedding Method</strong>. File: <code>sota_llm_embedding.ipynb</code></p>
+  </div>
+
+  <!-- SECTION 0: WHY SOTA -->
+  <div class="section" id="context">
+    <div class="sec-head">
+      <span class="sec-num n-t">00</span>
+      <div><div class="sec-title">Why Are We Moving to SOTA?</div><span class="sec-sub">What Word2Vec couldn't do — and what transformer-based models solve</span></div>
+    </div>
+
+    <p>We've spent several classes on classical methods: One-Hot Encoding, Bag of Words, TF-IDF, Word2Vec (CBOW + Skip-gram). All of them converted text to numbers, but all had a critical shared flaw — <strong>static embeddings</strong>. The word "bank" got the same vector whether you were talking about a river bank or a financial bank.</p>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">🔑 The Core Upgrade: From Static → Contextual</div>
+      <p><strong>Word2Vec / classical methods:</strong> One fixed vector per word. Context-blind. Only handles single words well.</p>
+      <p><strong>SOTA (Transformer-based) models:</strong> Dynamic vectors that change based on surrounding context. Handle words, sentences, paragraphs, even images and audio — all converted to embeddings with <em>real semantic meaning</em>.</p>
+      <p>The instructor summarised: "SOTA model is based on the transformer. Using this SOTA embedding model, we can convert any type of data — text, image, audio, video — into meaningful numbers."</p>
+    </div>
+
+    <div class="callout c-b">
+      <div class="callout-lbl">📌 Why This Matters for Your Career</div>
+      <p><strong>For interviews:</strong> You must understand transformer architecture, self-attention, and how embeddings are generated inside these models.</p>
+      <p><strong>For real projects:</strong> Every RAG system, semantic search engine, and vector database application uses SOTA embeddings. The instructor said: "RAG is all about the embedding, guys. Everything is embedding inside RAG."</p>
+    </div>
+
+    <h3>The Journey So Far</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Technique</th><th>Type</th><th>Handles Sentences?</th><th>Semantic?</th><th>Contextual?</th><th>Use Today</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">One-Hot Encoding</td><td>Encoding</td><td class="tr">❌</td><td class="tr">❌</td><td class="tr">❌</td><td>Interview knowledge only</td></tr>
+          <tr><td class="tc">Bag of Words</td><td>Encoding</td><td class="tr">❌</td><td class="tr">❌</td><td class="tr">❌</td><td>Interview knowledge only</td></tr>
+          <tr><td class="tc">TF-IDF / BM25</td><td>Encoding</td><td class="tg">✓</td><td class="tr">❌</td><td class="tr">❌</td><td>BM25 still used in RAG (sparse retrieval)</td></tr>
+          <tr><td class="tc">Word2Vec</td><td>Embedding</td><td class="tr">Word-only</td><td class="tg">✓ partial</td><td class="tr">❌ Static</td><td>Used inside Transformers as initial layer</td></tr>
+          <tr><td class="tc" style="color:var(--gold);">SOTA Transformer Models</td><td>Embedding</td><td class="tg">✓ Any length</td><td class="tg">✓ Deep</td><td class="tg">✓ Dynamic</td><td><strong>Used in ALL modern GenAI applications</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 1: SOTA OVERVIEW -->
+  <div class="section" id="sota-overview">
+    <div class="sec-head">
+      <span class="sec-num n-t">01</span>
+      <div><div class="sec-title">SOTA Embedding Models — The Big Picture</div><span class="sec-sub">Where the models live, who makes them, and how they work at a high level</span></div>
+    </div>
+
+    <div class="quote">
+      <p>Embedding is nothing — it is an intermediate representation of the data. Or I can say, it is an intermediate output of the model. In Word2Vec it came from the hidden layer. In Transformer-based models, it comes after the self-attention mechanism and the feed-forward neural network.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Where Embeddings Come From in a Transformer</h3>
+    <p>In Word2Vec, the embedding was the hidden layer output. In transformer-based models, the pipeline is:</p>
+    <ol class="steps">
+      <li><div class="s-num">1</div><div class="s-body"><strong>Tokenisation</strong><p>Text is split into tokens (sub-words). Each token gets an initial Word2Vec-style embedding.</p></div></li>
+      <li><div class="s-num">2</div><div class="s-body"><strong>Self-Attention</strong><p>Each token's representation is updated by attending to all other tokens in the sequence — this is where context enters. "Bank" near "river" → one representation. "Bank" near "finance" → a different one.</p></div></li>
+      <li><div class="s-num">3</div><div class="s-body"><strong>Feed-Forward Neural Network</strong><p>After self-attention, each token goes through a feed-forward layer for further transformation.</p></div></li>
+      <li><div class="s-num">4</div><div class="s-body"><strong>Output = Embedding</strong><p>The output of the final transformer layer is the contextual embedding. This is what you get when you call <code>.encode()</code> or <code>embed_query()</code> on any SOTA model.</p></div></li>
+    </ol>
+
+    <h3>Three Places to Get SOTA Embedding Models</h3>
+    <div class="model-grid">
+      <div class="model-card">
+        <div class="model-card-title"><span class="tag-free">FREE</span> Hugging Face</div>
+        <p>Open-source model hub. 20,000+ embedding models available. Download and run locally or via API. Accessed via the <strong>Sentence Transformers</strong> library.</p>
+        <div class="model-card-meta">Library: sentence-transformers · huggingface.co</div>
+      </div>
+      <div class="model-card">
+        <div class="model-card-title"><span class="tag-partial">FREE (limited)</span> Google Gemini</div>
+        <p>Gemini Embedding API. Free up to usage limits, then paid. Accessed via <code>langchain-google-genai</code> or direct Google Generative AI SDK. Produces 3072-dimensional vectors.</p>
+        <div class="model-card-meta">Model: gemini-embedding-001 · ai.google.dev</div>
+      </div>
+      <div class="model-card">
+        <div class="model-card-title"><span class="tag-paid">PAID</span> OpenAI</div>
+        <p>High-quality embeddings. Requires purchasing credits. Accessed via <code>langchain-openai</code>. Large model → 3072-dim, Small model → 1536-dim.</p>
+        <div class="model-card-meta">Models: text-embedding-3-large / small · platform.openai.com</div>
+      </div>
+    </div>
+
+    <div class="callout c-g">
+      <div class="callout-lbl">💡 Key Insight — All Based on Transformer</div>
+      <p>Whether it's a model from Hugging Face, OpenAI, or Google — they are ALL based on transformer architecture. The instructor showed the Hugging Face model page which stated: "This is a sentence-transformer model. It maps sentences and paragraphs into 384-dimensional dense vector space." All 20,000+ models on Hugging Face's Sentence Transformer hub are transformer-based.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SENTENCE TRANSFORMER -->
+  <div class="section" id="sentence-transformer">
+    <div class="sec-head">
+      <span class="sec-num n-t">02</span>
+      <div><div class="sec-title">Sentence Transformers — Open Source Embeddings</div><span class="sec-sub">The Hugging Face framework for free, local transformer-based embeddings</span></div>
+    </div>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">📖 What Is Sentence Transformer?</div>
+      <p><strong>Sentence Transformers</strong> is a Python framework (made by Hugging Face) for using and training state-of-the-art embedding and re-ranker models. It can compute embeddings from text, images, audio, and video.</p>
+      <p>Install with: <code>pip install sentence-transformers</code> (already in the course <code>requirements.txt</code>)</p>
+    </div>
+
+    <h3>Model Used in Class: <code>all-MiniLM-L6-v2</code></h3>
+    <p>This is one of the most popular open-source sentence embedding models. It maps any sentence/paragraph into a <strong>384-dimensional dense vector</strong>. No zeros — all values are meaningful floats (dense vector, not sparse).</p>
+
+    <h3>Complete Code — Load & Encode</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Sentence Transformer (Open Source, Free)</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Install: pip install sentence-transformers</span>
+<span class="kw">from</span> <span class="imp">sentence_transformers</span> <span class="kw">import</span> <span class="cls">SentenceTransformer</span>
+
+<span class="cm"># Load the model (downloads from Hugging Face Hub on first run)</span>
+<span class="var">model_name</span> = <span class="str">"all-MiniLM-L6-v2"</span>
+<span class="var">open_source_model</span> = <span class="cls">SentenceTransformer</span>(<span class="var">model_name</span>)
+
+<span class="cm"># ── Single Word ──────────────────────────────────────────</span>
+<span class="var">text</span> = <span class="str">"machine"</span>
+<span class="var">embedding</span> = <span class="var">open_source_model</span>.<span class="fn">encode</span>(<span class="var">text</span>)
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">embedding</span>))   <span class="cm"># 384</span>
+<span class="fn">print</span>(<span class="var">embedding</span>.shape)  <span class="cm"># (384,)</span>
+
+<span class="cm"># ── Sentence ─────────────────────────────────────────────</span>
+<span class="var">sentence</span> = <span class="str">"How does machine learning work in neural networks?"</span>
+<span class="var">embedding</span> = <span class="var">open_source_model</span>.<span class="fn">encode</span>(<span class="var">sentence</span>)
+<span class="fn">print</span>(<span class="var">embedding</span>.shape)  <span class="cm"># (384,) — same dimension!</span>
+
+<span class="cm"># ── Full Paragraph ───────────────────────────────────────</span>
+<span class="var">paragraph</span> = <span class="str">"""Artificial intelligence is transforming every industry.
+From healthcare to finance, machine learning models are enabling
+new capabilities that were previously impossible."""</span>
+<span class="var">embedding</span> = <span class="var">open_source_model</span>.<span class="fn">encode</span>(<span class="var">paragraph</span>)
+<span class="fn">print</span>(<span class="var">embedding</span>.shape)  <span class="cm"># (384,) — still 384, regardless of input length!</span></pre>
+    </div>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">⭐ Key Insight: Same Dimension Regardless of Input Length</div>
+      <p>Whether you pass a single word, a sentence, or a full paragraph — the output is always <strong>384 dimensions</strong> for this model. This is the power of SOTA models: they compress any amount of text into a fixed-size dense vector that captures its meaning.</p>
+      <p>This is exactly what makes them useful for RAG: any document chunk gets the same-size vector, so you can compare them with cosine similarity.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: API KEYS -->
+  <div class="section" id="api-keys">
+    <div class="sec-head">
+      <span class="sec-num n-g">03</span>
+      <div><div class="sec-title">API Keys & Environment Setup</div><span class="sec-sub">How to generate and securely store your API keys for all three platforms</span></div>
+    </div>
+
+    <h3>The Three Keys You Need</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Platform</th><th>Key Name</th><th>Cost</th><th>Where to Generate</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Hugging Face</td><td><code>HF_TOKEN</code></td><td><span class="tag-free">FREE</span></td><td>huggingface.co → Profile → Settings → Access Tokens → Create New Token (Read permission)</td></tr>
+          <tr><td class="tc">Google Gemini</td><td><code>GOOGLE_API_KEY</code></td><td><span class="tag-partial">FREE (limited)</span></td><td>ai.google.dev → Google AI Studio → Get API Key → Create API Key → Choose project</td></tr>
+          <tr><td class="tc">OpenAI</td><td><code>OPENAI_API_KEY</code></td><td><span class="tag-paid">PAID</span></td><td>platform.openai.com → API Keys → Create New Secret Key → Add billing credits</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-r">
+      <div class="callout-lbl">⚠️ NEVER Commit API Keys to GitHub</div>
+      <p>Store all keys in a <strong><code>.env</code> file</strong> and add <code>.env</code> to your <code>.gitignore</code>. The instructor provided a <code>.env.example</code> file in the GitHub repo showing the key names without values — use that as a template.</p>
+    </div>
+
+    <h3>Complete Setup Code</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Environment Setup (.env file + loading)</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Step 1: Create .env file in your project folder
+# (New File → name it ".env")</span>
+
+<span class="cm"># Contents of .env file:</span>
+<span class="cm"># OPENAI_API_KEY=sk-your-key-here</span>
+<span class="cm"># GOOGLE_API_KEY=AIzaSy-your-key-here</span>
+<span class="cm"># HF_TOKEN=hf_your-token-here</span>
+
+<span class="cm"># Step 2: In your notebook (FIRST cell, always)</span>
+<span class="kw">import</span> <span class="imp">os</span>
+<span class="kw">from</span> <span class="imp">dotenv</span> <span class="kw">import</span> <span class="fn">load_dotenv</span>
+
+<span class="fn">load_dotenv</span>()   <span class="cm"># Reads .env file and sets all variables as env vars</span>
+
+<span class="cm"># Step 3: Access keys safely in code</span>
+<span class="var">google_api_key</span> = <span class="var">os</span>.<span class="fn">getenv</span>(<span class="str">"GOOGLE_API_KEY"</span>)
+<span class="var">openai_api_key</span> = <span class="var">os</span>.<span class="fn">getenv</span>(<span class="str">"OPENAI_API_KEY"</span>)
+<span class="var">hf_token</span>       = <span class="var">os</span>.<span class="fn">getenv</span>(<span class="str">"HF_TOKEN"</span>)
+
+<span class="cm"># Set as OS environment variables (some libraries read from here)</span>
+<span class="var">os</span>.environ[<span class="str">"GOOGLE_API_KEY"</span>] = <span class="var">google_api_key</span>
+<span class="var">os</span>.environ[<span class="str">"HF_TOKEN"</span>] = <span class="var">hf_token</span>
+
+<span class="cm"># Verify keys are loaded (shows value, careful in shared notebooks)</span>
+<span class="fn">print</span>(<span class="var">os</span>.<span class="fn">getenv</span>(<span class="str">"GOOGLE_API_KEY"</span>))  <span class="cm"># Should print your key</span></pre>
+    </div>
+
+    <div class="callout c-b">
+      <div class="callout-lbl">💡 Why Token/API Key Is Required</div>
+      <p>The instructor used a great analogy: "Why is your phone number required? To make incoming and outgoing calls. Similarly, the token is required to connect with Hugging Face — to upload a model or to download a model. As simple as that."</p>
+      <p>For Hugging Face: choose <strong>Read</strong> permission to download models. Write permission is for uploading your fine-tuned models (covered later in the fine-tuning module).</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: GEMINI -->
+  <div class="section" id="gemini">
+    <div class="sec-head">
+      <span class="sec-num n-g">04</span>
+      <div><div class="sec-title">Gemini Embedding — Google's Free Model</div><span class="sec-sub">3072-dimensional embeddings via LangChain Google GenAI</span></div>
+    </div>
+
+    <p>Google's Gemini embedding model produces <strong>3072-dimensional vectors</strong> — much richer than the open-source 384-dimensional model. Accessed via the <code>langchain-google-genai</code> library.</p>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Google Gemini Embedding</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Install: pip install langchain-google-genai</span>
+<span class="kw">from</span> <span class="imp">langchain_google_genai</span> <span class="kw">import</span> <span class="cls">GoogleGenerativeAIEmbeddings</span>
+
+<span class="cm"># Load the Gemini embedding model</span>
+<span class="var">gemini_model</span> = <span class="cls">GoogleGenerativeAIEmbeddings</span>(
+    model=<span class="str">"models/gemini-embedding-001"</span>
+)
+
+<span class="cm"># Convert a sentence to embedding</span>
+<span class="var">query</span> = <span class="str">"How does machine learning work?"</span>
+<span class="var">embedding</span> = <span class="var">gemini_model</span>.<span class="fn">embed_query</span>(<span class="var">query</span>)
+
+<span class="cm"># Check dimension</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">embedding</span>))  <span class="cm"># 3072</span>
+
+<span class="cm"># Embed multiple documents at once</span>
+<span class="var">documents</span> = [<span class="str">"AI is transforming healthcare"</span>, <span class="str">"Machine learning needs data"</span>]
+<span class="var">doc_embeddings</span> = <span class="var">gemini_model</span>.<span class="fn">embed_documents</span>(<span class="var">documents</span>)
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">doc_embeddings</span>))      <span class="cm"># 2 (one per document)</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">doc_embeddings</span>[<span class="num">0</span>]))   <span class="cm"># 3072</span></pre>
+    </div>
+  </div>
+
+  <!-- SECTION 5: OPENAI -->
+  <div class="section" id="openai">
+    <div class="sec-head">
+      <span class="sec-num n-g">05</span>
+      <div><div class="sec-title">OpenAI Embedding — The Paid Option</div><span class="sec-sub">Two models: large (3072-dim) and small (1536-dim)</span></div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — OpenAI Embedding (Paid)</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Install: pip install langchain-openai</span>
+<span class="kw">from</span> <span class="imp">langchain_openai</span> <span class="kw">import</span> <span class="cls">OpenAIEmbeddings</span>
+
+<span class="cm"># Large model — 3072 dimensions</span>
+<span class="var">openai_large</span> = <span class="cls">OpenAIEmbeddings</span>(model=<span class="str">"text-embedding-3-large"</span>)
+<span class="var">emb_large</span> = <span class="var">openai_large</span>.<span class="fn">embed_query</span>(<span class="str">"How to reduce heart disease risk?"</span>)
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">emb_large</span>))  <span class="cm"># 3072</span>
+
+<span class="cm"># Small model — 1536 dimensions (cheaper, faster)</span>
+<span class="var">openai_small</span> = <span class="cls">OpenAIEmbeddings</span>(model=<span class="str">"text-embedding-3-small"</span>)
+<span class="var">emb_small</span> = <span class="var">openai_small</span>.<span class="fn">embed_query</span>(<span class="str">"How to reduce heart disease risk?"</span>)
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">emb_small</span>))  <span class="cm"># 1536</span>
+
+<span class="cm"># Rule: Larger model = more dimensions = higher quality
+# but also more tokens consumed = higher cost</span></pre>
+    </div>
+
+    <div class="callout c-g">
+      <div class="callout-lbl">💡 Which Model to Use?</div>
+      <p>For learning & practice: <strong>Hugging Face (all-MiniLM-L6-v2)</strong> — completely free, runs locally.</p>
+      <p>For free production with decent quality: <strong>Google Gemini embedding-001</strong> — free within limits.</p>
+      <p>For highest quality in production: <strong>OpenAI text-embedding-3-large</strong> — paid but best-in-class.</p>
+      <p>Instructor's note: "If you're not able to get OpenAI subscription, use the free one — as of now we are just doing learning."</p>
+    </div>
+
+    <h3>Dimension Comparison Across Models</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Model</th><th>Provider</th><th>Dimensions</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">all-MiniLM-L6-v2</td><td>Hugging Face</td><td><strong>384</strong></td><td><span class="tag-free">FREE</span></td></tr>
+          <tr><td class="tc">gemini-embedding-001</td><td>Google</td><td><strong>3072</strong></td><td><span class="tag-partial">FREE (limited)</span></td></tr>
+          <tr><td class="tc">text-embedding-3-large</td><td>OpenAI</td><td><strong>3072</strong></td><td><span class="tag-paid">PAID</span></td></tr>
+          <tr><td class="tc">text-embedding-3-small</td><td>OpenAI</td><td><strong>1536</strong></td><td><span class="tag-paid">PAID (cheaper)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-r">
+      <div class="callout-lbl">⚠️ Critical Warning: Never Mix Models</div>
+      <p>If you embed your query with Gemini and your documents with OpenAI — the similarity scores will be garbage. This is what happened during the live session! Always use the <strong>same model</strong> to embed both the query and the documents you're comparing against.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 6: IMAGE EMBEDDING -->
+  <div class="section" id="image">
+    <div class="sec-head">
+      <span class="sec-num n-p">06</span>
+      <div><div class="sec-title">Image Embedding with CLIP</div><span class="sec-sub">How to convert images to vectors using a Vision Transformer</span></div>
+    </div>
+
+    <div class="callout c-p">
+      <div class="callout-lbl">📖 SOTA Models Handle More Than Text</div>
+      <p>The instructor demonstrated embedding an actual image (his own photo). SOTA models can convert <strong>text, images, audio, and video</strong> into embeddings — all using the same transformer architecture underneath.</p>
+    </div>
+
+    <h3>Key Concepts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Term</th><th>What It Means</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">CLIP</td><td>Contrastive Language-Image Pre-Training — a model trained on both images and their text captions simultaneously. It learns that "a photo of a dog" and a dog image belong in the same vector space.</td></tr>
+          <tr><td class="tc">ViT (Vision Transformer)</td><td>Vision Transformer — CLIP's image processing backbone. It divides an image into patches and processes each patch like a token in a language transformer. "VIT is called the Vision Transformer."</td></tr>
+          <tr><td class="tc">Pixel Values</td><td>When an image is passed to the preprocessor, it's first converted into a grid of numbers (pixel values). These numbers are then fed to the model. An image = a matrix of numbers.</td></tr>
+          <tr><td class="tc">Image Embedding</td><td>The output of CLIP's vision encoder — a fixed-size float vector that represents what's in the image, in the same space as text embeddings.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Image Embedding with CLIP (Open Source)</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="kw">from</span> <span class="imp">transformers</span> <span class="kw">import</span> <span class="cls">CLIPModel</span>, <span class="cls">CLIPProcessor</span>
+<span class="kw">from</span> <span class="imp">PIL</span> <span class="kw">import</span> <span class="cls">Image</span>
+<span class="kw">import</span> <span class="imp">torch</span>
+
+<span class="cm"># Load the CLIP model (downloads from Hugging Face)</span>
+<span class="var">model_name</span> = <span class="str">"openai/clip-vit-base-patch32"</span>
+<span class="var">clip_model</span>     = <span class="cls">CLIPModel</span>.<span class="fn">from_pretrained</span>(<span class="var">model_name</span>)
+<span class="var">clip_processor</span> = <span class="cls">CLIPProcessor</span>.<span class="fn">from_pretrained</span>(<span class="var">model_name</span>)
+
+<span class="cm"># Load your image (save a PNG to an 'images/' subfolder)</span>
+<span class="var">image</span> = <span class="cls">Image</span>.<span class="fn">open</span>(<span class="str">"images/your_image.png"</span>)
+
+<span class="cm"># Step 1: Preprocess image → pixel values (numbers)</span>
+<span class="var">inputs</span> = <span class="var">clip_processor</span>(images=<span class="var">image</span>, return_tensors=<span class="str">"pt"</span>)
+<span class="cm"># inputs contains pixel_values: the image as a tensor of numbers</span>
+
+<span class="cm"># Step 2: Pass pixel values to model → get image embedding
+# torch.no_grad() = inference only, no training (no gradient tracking)</span>
+<span class="kw">with</span> torch.<span class="fn">no_grad</span>():
+    <span class="var">image_embedding</span> = <span class="var">clip_model</span>.<span class="fn">get_image_features</span>(**<span class="var">inputs</span>)
+
+<span class="fn">print</span>(<span class="var">image_embedding</span>.shape)  <span class="cm"># torch.Size([1, 512]) — 512-dim vector</span>
+<span class="cm"># This vector represents the content of the image in embedding space!</span></pre>
+    </div>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">🎯 Why Does This Matter for RAG?</div>
+      <p>In a multimodal RAG system, you can store image embeddings alongside text embeddings in a vector database. When a user asks "show me photos of a dog," you convert the query text to an embedding, then find the image embeddings closest to it. Same cosine similarity — different data types.</p>
+      <p>The instructor confirmed: "In multimodal RAG, you can convert image also into the embedding, and on top of it also, we can perform the retrieval operation."</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 7: SIMILARITY SEARCH -->
+  <div class="section" id="similarity">
+    <div class="sec-head">
+      <span class="sec-num n-b">07</span>
+      <div><div class="sec-title">Similarity Search — Three Methods</div><span class="sec-sub">Cosine similarity, dot product, and Euclidean distance — formulas, ranges, and code</span></div>
+    </div>
+
+    <p>Once we have embeddings, we need a way to measure <em>how similar</em> two embeddings are. Three standard mathematical methods are used:</p>
+
+    <div class="sim-cards">
+      <div class="sim-card sc-t">
+        <h4>Cosine Similarity</h4>
+        <div class="range">−1 to +1</div>
+        <p><strong>+1</strong> = identical direction (very similar)<br><strong>0</strong> = perpendicular (unrelated)<br><strong>−1</strong> = opposite direction</p>
+        <p style="margin-top:8px;">Most common in NLP. Measures the <em>angle</em> between vectors, ignoring magnitude.</p>
+      </div>
+      <div class="sim-card sc-g">
+        <h4>Dot Product</h4>
+        <div class="range">−∞ to +∞</div>
+        <p><strong>Higher value</strong> = more similar<br>Sensitive to magnitude (longer vectors score higher even if angle is same)</p>
+        <p style="margin-top:8px;">Fast to compute. Used when vectors are normalised.</p>
+      </div>
+      <div class="sim-card sc-p">
+        <h4>Euclidean Distance</h4>
+        <div class="range">0 to +∞</div>
+        <p><strong>0</strong> = identical vectors (same point)<br><strong>Higher value</strong> = more different (farther apart)</p>
+        <p style="margin-top:8px;">Measures the straight-line distance between two points in vector space.</p>
+      </div>
+    </div>
+
+    <h3>The Formulas</h3>
+    <div class="formula">
+      <div class="formula-title">Cosine Similarity Formula</div>
+      <div class="formula-body">
+        cosine_sim(A, B) = <span class="f-t">A · B</span> ÷ (<span class="f-g">‖A‖ × ‖B‖</span>)
+      </div>
+      <div class="formula-note">Dot product divided by the product of the magnitudes (norms) of the two vectors</div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — All Three Similarity Methods</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="kw">import</span> <span class="imp">numpy</span> <span class="kw">as</span> <span class="var">np</span>
+
+<span class="cm"># Two embedding vectors (normally would come from a model)</span>
+<span class="var">A</span> = np.<span class="fn">array</span>([...])  <span class="cm"># embedding of sentence A</span>
+<span class="var">B</span> = np.<span class="fn">array</span>([...])  <span class="cm"># embedding of sentence B</span>
+
+<span class="cm"># ── Method 1: Cosine Similarity ───────────────────────────</span>
+<span class="var">cos_sim</span> = np.<span class="fn">dot</span>(<span class="var">A</span>, <span class="var">B</span>) / (np.linalg.<span class="fn">norm</span>(<span class="var">A</span>) * np.linalg.<span class="fn">norm</span>(<span class="var">B</span>))
+<span class="cm"># Range: -1 to 1. Higher = more similar. 0.9 = very similar.</span>
+
+<span class="cm"># ── Method 2: Dot Product ────────────────────────────────</span>
+<span class="var">dot_product</span> = np.<span class="fn">dot</span>(<span class="var">A</span>, <span class="var">B</span>)
+<span class="cm"># Range: -∞ to +∞. Higher = more similar (if vectors are normalised).</span>
+
+<span class="cm"># ── Method 3: Euclidean Distance ─────────────────────────</span>
+<span class="var">euclidean_dist</span> = np.linalg.<span class="fn">norm</span>(<span class="var">A</span> - <span class="var">B</span>)
+<span class="cm"># Range: 0 to +∞. LOWER = more similar (smaller distance = closer points).</span>
+
+<span class="fn">print</span>(<span class="str">f"Cosine: {<span class="var">cos_sim</span>:.4f}"</span>)
+<span class="fn">print</span>(<span class="str">f"Dot Product: {<span class="var">dot_product</span>:.4f}"</span>)
+<span class="fn">print</span>(<span class="str">f"Euclidean: {<span class="var">euclidean_dist</span>:.4f}"</span>)</pre>
+    </div>
+
+    <h3>Full Similarity Search — Query vs. Documents</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Semantic Search: Query vs Document Collection</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="kw">import</span> <span class="imp">numpy</span> <span class="kw">as</span> <span class="var">np</span>
+<span class="kw">from</span> <span class="imp">langchain_google_genai</span> <span class="kw">import</span> <span class="cls">GoogleGenerativeAIEmbeddings</span>
+
+<span class="cm"># Load model</span>
+<span class="var">embed_model</span> = <span class="cls">GoogleGenerativeAIEmbeddings</span>(model=<span class="str">"models/gemini-embedding-001"</span>)
+
+<span class="cm"># Query and documents</span>
+<span class="var">query</span> = <span class="str">"How to reduce heart disease risk?"</span>
+<span class="var">documents</span> = [
+    <span class="str">"Eating fiber reduces heart disease risk."</span>,
+    <span class="str">"Fruits and vegetables lower cardiovascular problems."</span>,
+    <span class="str">"Regular exercise improves heart health."</span>,
+    <span class="str">"Stock markets are volatile this quarter."</span>,   <span class="cm"># unrelated</span>
+]
+
+<span class="cm"># Embed query and all documents — USE SAME MODEL!</span>
+<span class="var">query_embedding</span> = <span class="var">embed_model</span>.<span class="fn">embed_query</span>(<span class="var">query</span>)
+<span class="var">doc_embeddings</span>  = <span class="var">embed_model</span>.<span class="fn">embed_documents</span>(<span class="var">documents</span>)
+
+<span class="cm"># Calculate all three similarity metrics for each document</span>
+<span class="var">results</span> = []
+<span class="kw">for</span> <span class="var">doc</span>, <span class="var">doc_emb</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">documents</span>, <span class="var">doc_embeddings</span>):
+    <span class="var">q</span> = np.<span class="fn">array</span>(<span class="var">query_embedding</span>)
+    <span class="var">d</span> = np.<span class="fn">array</span>(<span class="var">doc_emb</span>)
+    
+    <span class="var">cosine</span>    = np.<span class="fn">dot</span>(<span class="var">q</span>, <span class="var">d</span>) / (np.linalg.<span class="fn">norm</span>(<span class="var">q</span>) * np.linalg.<span class="fn">norm</span>(<span class="var">d</span>))
+    <span class="var">dot_prod</span>  = np.<span class="fn">dot</span>(<span class="var">q</span>, <span class="var">d</span>)
+    <span class="var">euclidean</span> = np.linalg.<span class="fn">norm</span>(<span class="var">q</span> - <span class="var">d</span>)
+    
+    <span class="var">results</span>.<span class="fn">append</span>((<span class="var">doc</span>, <span class="var">cosine</span>, <span class="var">dot_prod</span>, <span class="var">euclidean</span>))
+
+<span class="cm"># Sort by cosine similarity (highest first = most relevant)</span>
+<span class="var">results</span>.<span class="fn">sort</span>(key=<span class="kw">lambda</span> <span class="var">x</span>: <span class="var">x</span>[<span class="num">1</span>], reverse=<span class="kw">True</span>)
+<span class="kw">for</span> <span class="var">doc</span>, <span class="var">cos</span>, <span class="var">dot</span>, <span class="var">euc</span> <span class="kw">in</span> <span class="var">results</span>:
+    <span class="fn">print</span>(<span class="str">f"Doc: {<span class="var">doc</span>[:40]}... | Cosine: {<span class="var">cos</span>:.3f} | Dot: {<span class="var">dot</span>:.2f} | Euclidean: {<span class="var">euc</span>:.3f}"</span>)
+
+<span class="cm"># Expected: heart-disease related docs score high, stock market doc scores low</span></pre>
+    </div>
+
+    <div class="callout c-g">
+      <div class="callout-lbl">🎯 Interpreting Results</div>
+      <p><strong>Cosine similarity:</strong> "Eating fiber reduces heart disease risk" vs query → high similarity (~0.85+). "Stock markets are volatile" → low similarity (near 0 or negative). This confirms the model understands <em>meaning</em>, not just word overlap.</p>
+      <p><strong>For Euclidean:</strong> Remember the opposite rule — <em>lower is more similar</em>. The closest (most similar) document will have the smallest Euclidean distance.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 8: KEYWORD VS SEMANTIC -->
+  <div class="section" id="keyword">
+    <div class="sec-head">
+      <span class="sec-num n-b">08</span>
+      <div><div class="sec-title">Keyword Search vs Semantic Search</div><span class="sec-sub">Two fundamentally different ways to find relevant documents</span></div>
+    </div>
+
+    <div class="quote">
+      <p>I have shown you both methods. One is the keyword search method, and second is the semantic search. Both are used in RAG — the combination of both is called Hybrid Search.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Keyword Search (BM25 style) — How It Works</h3>
+    <p>Counts how many query words appear in each document. Score = number of matching words. Simple, fast, but misses synonyms and semantic meaning entirely.</p>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Keyword Search Implementation</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="kw">from</span> <span class="imp">collections</span> <span class="kw">import</span> <span class="cls">Counter</span>
+
+<span class="var">query</span> = <span class="str">"How to reduce heart disease risk?"</span>
+<span class="var">documents</span> = [
+    <span class="str">"Eating fiber reduces heart disease risk."</span>,
+    <span class="str">"Fruits and vegetables lower cardiovascular problems."</span>,
+    <span class="str">"Regular exercise improves heart health."</span>,
+    <span class="str">"Stock markets are volatile this quarter."</span>,
+]
+
+<span class="cm"># Tokenise query (lowercase + split + remove punctuation)</span>
+<span class="var">query_words</span> = <span class="var">query</span>.<span class="fn">lower</span>().<span class="fn">replace</span>(<span class="str">"?"</span>, <span class="str">""</span>).<span class="fn">split</span>()
+<span class="cm"># → ['how', 'to', 'reduce', 'heart', 'disease', 'risk']</span>
+
+<span class="var">results</span> = []
+<span class="kw">for</span> <span class="var">doc</span> <span class="kw">in</span> <span class="var">documents</span>:
+    <span class="cm"># Tokenise document</span>
+    <span class="var">doc_words</span>  = <span class="var">doc</span>.<span class="fn">lower</span>().<span class="fn">replace</span>(<span class="str">"."</span>, <span class="str">""</span>).<span class="fn">split</span>()
+    <span class="var">doc_count</span>  = <span class="cls">Counter</span>(<span class="var">doc_words</span>)
+    
+    <span class="cm"># Score = count of query words that appear in document</span>
+    <span class="var">score</span> = <span class="fn">sum</span>(<span class="var">doc_count</span>[<span class="var">word</span>] <span class="kw">for</span> <span class="var">word</span> <span class="kw">in</span> <span class="var">query_words</span>)
+    <span class="var">results</span>.<span class="fn">append</span>((<span class="var">doc</span>, <span class="var">score</span>))
+
+<span class="cm"># Sort by score (highest = most keyword overlap)</span>
+<span class="kw">for</span> <span class="var">doc</span>, <span class="var">score</span> <span class="kw">in</span> <span class="fn">sorted</span>(<span class="var">results</span>, key=<span class="kw">lambda</span> <span class="var">x</span>: <span class="var">x</span>[<span class="num">1</span>], reverse=<span class="kw">True</span>):
+    <span class="fn">print</span>(<span class="str">f"Score: {<span class="var">score</span>} | {<span class="var">doc</span>}"</span>)
+
+<span class="cm"># Output:
+# Score: 2 | Eating fiber reduces heart disease risk.    ← 'heart', 'risk' match
+# Score: 1 | Regular exercise improves heart health.     ← 'heart' matches
+# Score: 0 | Fruits and vegetables lower cardiovascular. ← no word overlap!
+# Score: 0 | Stock markets are volatile this quarter.    ← no overlap</span></pre>
+    </div>
+
+    <h3>Keyword vs Semantic — Head to Head</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>Keyword Search</th><th>Semantic Search</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">How It Works</td><td>Counts exact word matches between query and document</td><td>Compares meaning via cosine similarity of embeddings</td></tr>
+          <tr><td class="tc">Handles Synonyms?</td><td class="tr">❌ "cardiovascular" ≠ "heart"</td><td class="tg">✓ "cardiovascular" ≈ "heart disease"</td></tr>
+          <tr><td class="tc">Speed</td><td class="tg">Very fast (simple counting)</td><td>Slower (needs embedding + vector math)</td></tr>
+          <tr><td class="tc">Memory</td><td class="tg">Minimal</td><td>Requires storing embeddings (large files)</td></tr>
+          <tr><td class="tc">Used In RAG As</td><td>Sparse retrieval (BM25)</td><td>Dense retrieval (vector DB)</td></tr>
+          <tr><td class="tc">Best For</td><td>Exact term matching, structured queries</td><td>Natural language questions, fuzzy matching</td></tr>
+          <tr><td class="tc">Example Failure</td><td>"fruits and vegetables" scores 0 for heart disease query</td><td>May miss exact technical terms</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">🔗 How These Are Used Together in RAG</div>
+      <p>Modern RAG systems use <strong>Hybrid Search</strong> — combining keyword search (BM25) and semantic search (vector similarity) to get the best of both worlds. This is covered in detail in the RAG chapter.</p>
+      <p>The "re-ranker" models mentioned in the Sentence Transformer docs — those re-rank results from both retrieval methods to find the most relevant document. Coming in the RAG module.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 9: ENCODING VS WORD2VEC VS SOTA -->
+  <div class="section" id="comparison">
+    <div class="sec-head">
+      <span class="sec-num n-gr">09</span>
+      <div><div class="sec-title">The Grand Comparison — All Three Eras</div><span class="sec-sub">Encoding vs Word2Vec vs SOTA Transformer models in one table</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>Encoding (OHE/BoW/TF-IDF)</th><th>Word Embedding (Word2Vec)</th><th>SOTA (Transformer)</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Method</td><td>Mathematical formula</td><td>Shallow neural network</td><td>Deep transformer network</td></tr>
+          <tr><td class="tc">Training Required</td><td class="tg">No</td><td class="tr">Yes (shallow)</td><td class="tr">Yes (massive)</td></tr>
+          <tr><td class="tc">Handles Sentences</td><td class="tr">Poorly</td><td class="tr">Average Word2Vec only</td><td class="tg">✓ Any length natively</td></tr>
+          <tr><td class="tc">Semantic Understanding</td><td class="tr">None</td><td class="tg">Partial (static)</td><td class="tg">Deep (contextual)</td></tr>
+          <tr><td class="tc">Contextual</td><td class="tr">No</td><td class="tr">No (fixed vector per word)</td><td class="tg">Yes (changes per context)</td></tr>
+          <tr><td class="tc">Vector Type</td><td>Sparse (many zeros)</td><td>Dense, fixed-dim</td><td>Dense, fixed-dim</td></tr>
+          <tr><td class="tc">Handles Images/Audio</td><td class="tr">No</td><td class="tr">No</td><td class="tg">Yes (CLIP, ViT, etc.)</td></tr>
+          <tr><td class="tc">Vector Dimension</td><td>= Vocab size (huge)</td><td>= Hidden layer neurons (300)</td><td>Model-defined (384–3072)</td></tr>
+          <tr><td class="tc">OOV Problem</td><td class="tr">Yes</td><td class="tr">Yes</td><td class="tg">No (sub-word tokenisation)</td></tr>
+          <tr><td class="tc">Used in RAG?</td><td>BM25 (keyword retrieval)</td><td>Rare (initial Transformer layer)</td><td class="tg">Yes — the main retrieval method</td></tr>
+          <tr><td class="tc">Modern Usage</td><td>Interview prep, BM25</td><td>Interview prep + Transformer input</td><td class="tg">ALL production GenAI applications</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 10: INTERVIEW -->
+  <div class="section" id="interview">
+    <div class="sec-head">
+      <span class="sec-num n-r">10</span>
+      <div><div class="sec-title">Interview Preparation</div><span class="sec-sub">Questions covering SOTA embeddings, similarity search, and model selection</span></div>
+    </div>
+
+    <div class="interview">
+      <h3>🎯 SOTA Embeddings & Similarity Search — Q&A</h3>
+
+      <div class="iq">
+        <div class="q">Q1: What is a SOTA embedding model and how is it different from Word2Vec?</div>
+        <div class="a">SOTA (State-of-the-Art) embedding models are based on transformer architecture, whereas Word2Vec uses a shallow single-hidden-layer neural network. Key differences: SOTA models produce contextual embeddings (same word gets different vectors based on surrounding context), Word2Vec produces static embeddings. SOTA models handle sentences and paragraphs natively, Word2Vec only handles individual words (requires averaging for sentences). SOTA models can also embed images, audio, and video. Examples: all-MiniLM-L6-v2 (HuggingFace), Gemini embedding-001, OpenAI text-embedding-3-large.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q2: Where does the embedding come from in a transformer-based model?</div>
+        <div class="a">In a transformer, the embedding is generated after the self-attention mechanism and the feed-forward neural network. First, tokens get initial Word2Vec-style embeddings. Then self-attention allows each token to attend to all others — this is where contextual understanding is built. The feed-forward layer further transforms the representations. The final output of this pipeline for a sentence is the sentence embedding. This is analogous to Word2Vec's hidden layer output, but far richer because of the multi-head attention mechanism.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q3: What is cosine similarity and why is it used for semantic search?</div>
+        <div class="a">Cosine similarity measures the angle between two vectors: cosine_sim(A,B) = (A·B) / (‖A‖ × ‖B‖). Range: -1 to +1. A score of +1 means identical direction (very similar meaning), 0 means unrelated, -1 means opposite. It's preferred for semantic search because it's scale-invariant — it measures the direction of vectors, not their magnitude, so two documents with the same meaning but different lengths still score high similarity.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q4: What is the difference between keyword search and semantic search?</div>
+        <div class="a">Keyword search counts exact word matches — a query for "heart disease" won't match "cardiovascular problems" even though they mean the same thing. Score = number of matching words. Semantic search converts both query and documents to embeddings and measures cosine similarity. It understands that "cardiovascular" and "heart disease" are related. In production RAG systems, both are combined (hybrid search): BM25 for keyword retrieval and vector similarity for semantic retrieval, then a re-ranker model selects the best results.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q5: What are the three similarity methods and their ranges?</div>
+        <div class="a">Cosine Similarity: range -1 to +1. Higher = more similar. Most common for NLP. Dot Product: range -∞ to +∞. Higher = more similar (best when vectors are normalised). Euclidean Distance: range 0 to +∞. LOWER = more similar (it's a distance, so smaller = closer). Critical rule: always use the SAME embedding model to embed both the query and the documents. Mixing models (Gemini query + OpenAI documents) produces meaningless similarity scores.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q6: What is CLIP and what is ViT?</div>
+        <div class="a">CLIP (Contrastive Language-Image Pre-Training) is a transformer-based model trained on image-text pairs. It places images and text in the same embedding space, so you can compare "a photo of a dog" (text) with an actual dog image (pixels) using cosine similarity. ViT (Vision Transformer) is the image encoder inside CLIP — it divides images into patches (like tokens), processes them through transformer layers, and produces an image embedding. Together they enable multimodal RAG systems that can retrieve images using text queries.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q7: How do you choose which embedding model to use?</div>
+        <div class="a">For learning and free projects: Hugging Face all-MiniLM-L6-v2 — completely free, 384 dimensions, runs locally. For free production embeddings: Google Gemini embedding-001 — free within API limits, 3072 dimensions. For highest quality production: OpenAI text-embedding-3-large — paid, 3072 dimensions, best benchmark performance. The MTEB (Massive Text Embedding Benchmark) leaderboard on Hugging Face shows objective performance comparisons across all embedding models — use it to choose the best model for your specific use case.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 11: ROADMAP -->
+  <div class="section" id="roadmap">
+    <div class="sec-head">
+      <span class="sec-num n-b">11</span>
+      <div><div class="sec-title">Where We Are — Updated Course Roadmap</div><span class="sec-sub">Module 1 complete. Entering the Transformer world.</span></div>
+    </div>
+
+    <div class="rm-wrap">
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>Module 1 Complete — Encoding & Embedding</strong><span>OHE, BoW, TF-IDF, Word2Vec (CBOW + Skip-gram + Custom Training), SOTA Embeddings</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>SOTA Embeddings (Today — Class 5/Session 8)</strong><span>Sentence Transformers, Gemini, OpenAI, CLIP image embedding, cosine similarity, keyword vs semantic search</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-now">→</div><div class="rm-line"></div></div><div class="rm-body"><strong>Transformer Architecture (2–3 Classes)</strong><span>Attention mechanism ("Attention Is All You Need"), encoder-decoder, multi-head self-attention, positional encoding — for interviews and LLM understanding</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">4</div><div class="rm-line"></div></div><div class="rm-body"><strong>LLM Architecture Overview</strong><span>LLaMA, GPT, multimodal LLMs (image-text, video-text, audio-text), CLIP deep dive, high-level architectural overview</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">5</div><div class="rm-line"></div></div><div class="rm-body"><strong>Fine-Tuning (Multiple Classes)</strong><span>Hugging Face, Unsloth, LoRA/QLoRA, RLHF/SFTRL. This is where the real practical GenAI engineering begins.</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">6</div><div class="rm-line"></div></div><div class="rm-body"><strong>RAG (Retrieval Augmented Generation)</strong><span>Everything from this session gets used here: embeddings, vector databases, cosine similarity, hybrid search, re-rankers</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">7</div><div class="rm-line"></div></div><div class="rm-body"><strong>Agents → MCP → LangChain / LangGraph</strong><span>Agentic AI, tool use, orchestration frameworks, memory management</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">8</div><div class="rm-line"></div></div><div class="rm-body"><strong>LLMOps + Cloud + End-to-End Projects</strong><span>AWS Bedrock, Azure AI Foundry, GCP, monitoring, tracing (LangSmith), deployment</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">🏆</div></div><div class="rm-body"><strong>Mega Challenge (Post Fine-tuning)</strong><span>Big project competition with prizes — gifts, cash, extra course access. Announced after fine-tuning module complete.</span></div></div>
+    </div>
+
+    <div class="callout c-t">
+      <div class="callout-lbl">📌 Action Items from This Class</div>
+      <p><strong>Generate all three API keys</strong> (if not done): HF token (huggingface.co), Gemini API key (ai.google.dev), OpenAI API key (platform.openai.com — optional, paid).</p>
+      <p><strong>Install new packages:</strong> <code>pip install sentence-transformers langchain-google-genai langchain-openai pyaml python-dotenv</code></p>
+      <p><strong>Create your .env file</strong> in your project directory with the three key variables (see code in Section 3).</p>
+      <p><strong>Run the similarity search code</strong> from GitHub (Class 8 folder → sota_llm_embedding.ipynb) and experiment with your own queries and documents.</p>
+      <p><strong>Assignment solution</strong> (Assignment 1) is available in the GitHub repo now — check the resource section of your dashboard.</p>
+    </div>
+
+    <div class="callout c-g">
+      <div class="callout-lbl">💡 The Instructor's Big-Picture Reminder</div>
+      <p>"Why am I doing this much hard work with embedding? Because you won't believe how important it is. My further effort in the RAG and agents chapters will be reduced because of this foundation. Everything we learned today — embeddings, cosine similarity, keyword search, semantic search — is directly used inside the RAG system."</p>
+      <p>Every concept from Classes 1–5 comes together in RAG. The entire Module 1 was building toward that moment.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Full Stack GenAI Bootcamp 1.0 &nbsp;·&nbsp; Session: <strong>SOTA Embeddings & Similarity Search — Class 5 (Session 8, 18th April)</strong><br>
+  <span style="display:block; margin-top:6px;">GitHub: <strong>Class 8, 18 April — SOTA Transformer Embedding</strong> &nbsp;·&nbsp; Platform: <strong>krishnaik.academy</strong></span>
+</footer>
+
+</body>
+</html>

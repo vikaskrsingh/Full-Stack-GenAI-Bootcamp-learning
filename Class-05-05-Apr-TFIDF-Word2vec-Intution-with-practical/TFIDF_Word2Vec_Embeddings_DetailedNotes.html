@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TF-IDF, Word2Vec & Embeddings — Detailed Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #484f58;
+    --teal: #39d0bb;
+    --teal-dim: #0e3a35;
+    --gold: #f0a742;
+    --gold-dim: #3a2800;
+    --red: #f47067;
+    --red-dim: #3d1a18;
+    --purple: #bc8cff;
+    --purple-dim: #2a1a40;
+    --blue: #79c0ff;
+    --blue-dim: #0d2238;
+    --green: #56d364;
+    --green-dim: #0a2d12;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2238 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 64px 40px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content:'';
+    position:absolute; top:-80px; right:-60px;
+    width:320px; height:320px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(57,208,187,0.08) 0%, transparent 70%);
+  }
+  .hero::after {
+    content:'';
+    position:absolute; bottom:-40px; left:30%;
+    width:200px; height:200px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(240,167,66,0.06) 0%, transparent 70%);
+  }
+  .hero-inner { max-width: 900px; margin: 0 auto; position:relative; z-index:1; }
+  .session-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--teal-dim); border:1px solid var(--teal);
+    color: var(--teal); border-radius: 20px;
+    padding: 4px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 2px; text-transform:uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 18px;
+  }
+  .hero h1 .accent { color: var(--teal); }
+  .hero h1 .accent2 { color: var(--gold); }
+  .hero-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 560px;
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+  .hero-pills { display:flex; gap:10px; flex-wrap:wrap; }
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .pill span { color: var(--text); font-weight: 500; }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display:flex; align-items:center; gap:4px;
+    overflow-x:auto;
+    position: sticky; top:0; z-index: 100;
+  }
+  .nav-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size:10px; color: var(--text-dim);
+    letter-spacing:2px; text-transform:uppercase;
+    padding: 16px 12px 16px 0;
+    border-right: 1px solid var(--border);
+    margin-right: 8px;
+    white-space: nowrap;
+    flex-shrink:0;
+  }
+  .nav a {
+    color: var(--text-muted);
+    text-decoration:none;
+    font-size:13px;
+    padding: 16px 12px;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .nav a:hover { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* ── MAIN ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 48px 30px; }
+
+  /* ── INTRO CARD ── */
+  .intro-card {
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 52px;
+  }
+  .intro-card p { color: var(--text); font-size:15px; font-weight:300; margin-bottom:8px; }
+  .intro-card p:last-child { margin-bottom:0; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 64px; scroll-margin-top: 60px; }
+  .section-head {
+    display:flex; align-items:center; gap:16px;
+    margin-bottom: 28px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    background: var(--teal);
+    color: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .section-num.gold { background: var(--gold); }
+  .section-num.purple { background: var(--purple); }
+  .section-num.red { background: var(--red); }
+  .section-num.blue { background: var(--blue); }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--text);
+  }
+  .section-sub { font-size:13px; color: var(--text-muted); display:block; margin-top:2px; }
+
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--text);
+    margin: 32px 0 12px;
+  }
+  h4 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; font-weight: 500;
+    color: var(--teal);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    margin: 22px 0 8px;
+  }
+  p { margin-bottom: 12px; font-weight: 300; color: var(--text); }
+  p strong { font-weight: 500; color: var(--text); }
+
+  /* ── INSTRUCTOR QUOTE ── */
+  .quote {
+    background: var(--surface2);
+    border-left: 3px solid var(--teal);
+    border-radius: 0 8px 8px 0;
+    padding: 18px 22px;
+    margin: 22px 0;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 15px;
+    position: relative;
+  }
+  .quote::before { content:'"'; font-size:40px; color:var(--teal); line-height:0; position:absolute; top:22px; left:14px; opacity:0.4; }
+  .quote p { color: var(--text-muted); margin:0; padding-left:12px; font-weight:300; }
+  .quote cite { display:block; padding-left:12px; margin-top:8px; font-size:11px; font-style:normal; font-family:'IBM Plex Mono',monospace; color:var(--teal); letter-spacing:1px; }
+
+  /* ── CALLOUT ── */
+  .callout { border-radius:8px; padding:18px 22px; margin:20px 0; border:1px solid; }
+  .callout-label {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px; font-weight:500;
+    letter-spacing:2px; text-transform:uppercase;
+    margin-bottom:10px; display:flex; align-items:center; gap:6px;
+  }
+  .callout p { font-size:15px; margin-bottom:6px; }
+  .callout p:last-child { margin-bottom:0; }
+  .callout.teal { background:var(--teal-dim); border-color:var(--teal); }
+  .callout.teal .callout-label { color:var(--teal); }
+  .callout.gold { background:var(--gold-dim); border-color:var(--gold); }
+  .callout.gold .callout-label { color:var(--gold); }
+  .callout.red { background:var(--red-dim); border-color:var(--red); }
+  .callout.red .callout-label { color:var(--red); }
+  .callout.purple { background:var(--purple-dim); border-color:var(--purple); }
+  .callout.purple .callout-label { color:var(--purple); }
+  .callout.blue { background:var(--blue-dim); border-color:var(--blue); }
+  .callout.blue .callout-label { color:var(--blue); }
+  .callout.green { background:var(--green-dim); border-color:var(--green); }
+  .callout.green .callout-label { color:var(--green); }
+
+  /* ── EXAMPLE BLOCK ── */
+  .example {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .example-head {
+    background: var(--surface2);
+    padding: 8px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--gold);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .example-body { padding: 18px 20px; }
+  .example-body p { font-size:15px; margin-bottom:8px; }
+  .example-body p:last-child { margin-bottom:0; }
+
+  /* ── CODE ── */
+  .code-wrap {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 20px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .code-head {
+    background: var(--surface2);
+    padding: 10px 18px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-lang { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--teal); letter-spacing:2px; text-transform:uppercase; }
+  .dots { display:flex; gap:6px; }
+  .d { width:10px; height:10px; border-radius:50%; }
+  .dr { background:#ff5f56; } .dy { background:#ffbd2e; } .dg { background:#27c93f; }
+  pre { padding:22px 22px; overflow-x:auto; font-family:'IBM Plex Mono',monospace; font-size:13px; line-height:1.8; color:#adbac7; }
+  .kw { color:#f47067; }
+  .fn { color:#79c0ff; }
+  .str { color:#96d0ff; }
+  .cm { color:#484f58; font-style:italic; }
+  .var { color:#ffa657; }
+  .num { color:#f69d50; }
+  .imp { color:#56d364; }
+  .op { color:#ff7b72; }
+
+  /* ── FORMULA BLOCK ── */
+  .formula {
+    background: var(--surface);
+    border: 1px solid var(--teal);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    text-align:center;
+  }
+  .formula-title { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--teal); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+  .formula-body {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:18px;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+  }
+  .formula-body .f-highlight { color: var(--teal); font-weight:600; }
+  .formula-body .f-gold { color: var(--gold); font-weight:600; }
+  .formula-note { font-size:13px; color:var(--text-muted); margin-top:10px; font-style:italic; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; margin:20px 0; border-radius:8px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:14px; background:var(--surface); }
+  thead tr { background:var(--surface2); }
+  thead th { padding:12px 16px; text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); font-weight:500; border-bottom:1px solid var(--border); }
+  tbody td { padding:10px 16px; border-bottom:1px solid var(--border); font-weight:300; vertical-align:top; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background: var(--surface2); }
+  .tc { color:var(--teal); font-weight:500; }
+  .tg { color:var(--green); }
+  .tr { color:var(--red); }
+
+  /* ── STEPS ── */
+  .steps { list-style:none; margin:16px 0; }
+  .steps li { display:flex; gap:16px; margin-bottom:18px; align-items:flex-start; }
+  .step-dot {
+    width:28px; height:28px;
+    background: var(--teal);
+    color: var(--bg);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px; font-weight:600;
+    border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; margin-top:2px;
+  }
+  .step-body { flex:1; }
+  .step-body strong { display:block; margin-bottom:4px; font-weight:500; color:var(--text); }
+  .step-body p { font-size:15px; margin-bottom:0; color:var(--text-muted); }
+
+  /* ── PROS CONS ── */
+  .pc-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0; }
+  @media(max-width:600px){.pc-grid{grid-template-columns:1fr;}}
+  .pc-box { border-radius:8px; padding:18px; border:1px solid; }
+  .pc-green { background:var(--green-dim); border-color:var(--green); }
+  .pc-red { background:var(--red-dim); border-color:var(--red); }
+  .pc-title { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .pc-green .pc-title { color:var(--green); }
+  .pc-red .pc-title { color:var(--red); }
+  .pc-list { list-style:none; }
+  .pc-list li { font-size:14.5px; font-weight:300; margin-bottom:8px; padding-left:20px; position:relative; }
+  .pc-list li::before { position:absolute; left:0; }
+  .pc-green .pc-list li::before { content:'✓'; color:var(--green); font-weight:600; }
+  .pc-red .pc-list li::before { content:'✗'; color:var(--red); font-weight:600; }
+
+  /* ── MATH CALC BLOCK ── */
+  .math-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:8px; padding:20px 24px; margin:20px 0;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px; line-height:2;
+  }
+  .math-block .ml { color:var(--teal); }
+  .math-block .mr { color:var(--gold); }
+  .math-block .ms { color:var(--text-muted); font-size:12px; }
+  .math-block .md { color:var(--text); }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:8px; padding:24px;
+    margin:20px 0;
+    display:flex; gap:0; align-items:center; justify-content:center;
+    overflow-x:auto;
+  }
+  .arch-layer {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    flex-shrink:0;
+  }
+  .arch-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:1px; text-align:center; }
+  .arch-node {
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600;
+    border: 2px solid;
+  }
+  .arch-node.input { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); }
+  .arch-node.hidden { background:var(--teal-dim); border-color:var(--teal); color:var(--teal); }
+  .arch-node.output { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
+  .arch-arrow { color:var(--text-dim); font-size:20px; padding:0 12px; align-self:center; flex-shrink:0; }
+
+  /* ── WORD2VEC FEATURE TABLE ── */
+  .feat-table {
+    background: var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px; overflow:hidden; margin:20px 0;
+  }
+  .feat-table table { width:100%; }
+  .feat-table thead th { background:var(--surface2); color:var(--text-muted); }
+  .feat-table td:first-child { color:var(--gold); font-weight:500; font-family:'IBM Plex Mono',monospace; }
+
+  /* ── INTERVIEW ── */
+  .interview-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:10px; padding:28px 30px; margin:28px 0;
+  }
+  .interview-section h3 { color:var(--gold); margin-top:0; }
+  .iq { border-left:2px solid var(--gold); padding:12px 16px; margin-bottom:14px; background:var(--gold-dim); border-radius:0 6px 6px 0; }
+  .iq .q { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold); margin-bottom:6px; letter-spacing:1px; }
+  .iq .a { font-size:14.5px; color:var(--text-muted); line-height:1.65; font-weight:300; }
+
+  /* ── DIVIDER ── */
+  .div { border:none; height:1px; background:linear-gradient(to right, transparent, var(--border), transparent); margin:52px 0; }
+
+  /* ── ROADMAP ── */
+  .roadmap { margin:20px 0; }
+  .rm-item { display:flex; gap:14px; margin-bottom:4px; }
+  .rm-left { display:flex; flex-direction:column; align-items:center; gap:0; width:32px; flex-shrink:0; }
+  .rm-dot { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; flex-shrink:0; }
+  .rm-dot.done { background:var(--teal); color:var(--bg); }
+  .rm-dot.now { background:var(--gold); color:var(--bg); }
+  .rm-dot.next { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); }
+  .rm-line { width:1px; background:var(--border); flex:1; min-height:20px; }
+  .rm-content { padding:5px 0 24px; }
+  .rm-content strong { display:block; font-size:15px; font-weight:500; color:var(--text); margin-bottom:2px; }
+  .rm-content span { font-size:13px; color:var(--text-muted); }
+
+  /* ── INLINE CODE ── */
+  code { font-family:'IBM Plex Mono',monospace; font-size:12.5px; background:var(--surface2); border:1px solid var(--border); padding:2px 7px; border-radius:4px; color:var(--teal); }
+
+  /* ── FOOTER ── */
+  footer { background:var(--surface); border-top:1px solid var(--border); padding:28px 40px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim); letter-spacing:1px; }
+  footer strong { color:var(--teal); }
+
+  @media print { .nav { display:none; } body { background:#fff; color:#000; } }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="session-badge">🎓 Class 3 — Session Notes</div>
+    <h1>TF-IDF · <span class="accent">Word2Vec</span> &<br><span class="accent2">Embeddings</span></h1>
+    <p class="hero-desc">Complete classroom-equivalent notes covering every concept, formula, example, and code walkthrough. Written for the student who missed the session entirely.</p>
+    <div class="hero-pills">
+      <div class="pill">📅 Date: <span>5th April 2026</span></div>
+      <div class="pill">🎙️ Instructor: <span>Sunny Savita</span></div>
+      <div class="pill">📌 Session: <span>Class 3 of Encoding & Embedding</span></div>
+      <div class="pill">⏱️ Duration: <span>~4 Hours incl. Q&A</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-label">Jump To</span>
+  <a href="#recap">Session Recap</a>
+  <a href="#tfidf">TF-IDF Deep Dive</a>
+  <a href="#formulas">Formulas</a>
+  <a href="#log">Why Log?</a>
+  <a href="#worked">Worked Example</a>
+  <a href="#practical">Practical Code</a>
+  <a href="#proscons">Pros & Cons</a>
+  <a href="#encoding-vs-embedding">Encoding vs Embedding</a>
+  <a href="#word2vec">Word2Vec</a>
+  <a href="#neural-net">Neural Network Recap</a>
+  <a href="#features">Feature Representation</a>
+  <a href="#interview">Interview Prep</a>
+  <a href="#roadmap">Roadmap</a>
+</nav>
+
+<div class="main">
+
+  <!-- INTRO CARD -->
+  <div class="intro-card">
+    <p><strong>This is Class 3</strong> of the Encoding & Embedding module. Classes 1 and 2 covered One-Hot Encoding and Bag of Words. If you missed those, check the previous notes. This session completes the classical encoding picture with <strong>TF-IDF</strong>, then introduces <strong>Word2Vec</strong> and the fundamental distinction between <em>encoding</em> and <em>embedding</em>.</p>
+    <p>All code, research papers, and handwritten notes are on GitHub → <strong>Full Stack GenAI Bootcamp 1.0 → April 5th folder.</strong></p>
+  </div>
+
+  <!-- SECTION 0: RECAP -->
+  <div class="section" id="recap">
+    <div class="section-head">
+      <span class="section-num">0</span>
+      <div><div class="section-title">Quick Recap — What We Learned So Far</div><span class="section-sub">Previous two classes in 60 seconds</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Technique</th><th>What it does</th><th>Vector Values</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">One-Hot Encoding</td><td>Checks if a word is present or absent</td><td>Binary: 0 or 1</td><td><span class="tg">✓ Done</span></td></tr>
+          <tr><td class="tc">Bag of Words (BoW)</td><td>Counts how many times each word appears</td><td>Integer counts: 0, 1, 2…</td><td><span class="tg">✓ Done</span></td></tr>
+          <tr><td class="tc">TF-IDF</td><td>Measures frequency AND importance of words</td><td>Decimal weights</td><td><span style="color:var(--gold);">▶ Today</span></td></tr>
+          <tr><td class="tc">Word2Vec</td><td>Neural network-based semantic word representation</td><td>Dense float vectors</td><td><span style="color:var(--gold);">▶ Today</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">📌 Common Thread Across ALL Methods</div>
+      <p>Every single technique — OHE, BoW, TF-IDF, Word2Vec — starts with the same first step: <strong>build a vocabulary</strong> (a set of all unique words from your data). The vocabulary decides the vector dimension. This is universal.</p>
+    </div>
+
+    <div class="callout blue">
+      <div class="callout-label">💡 Why Do We Need a Vocabulary?</div>
+      <p>Text data is <strong>unstructured</strong> — different sentences have different lengths. For example: "I love India" (3 words) vs "I love generative AI with DL" (6 words). If we create a vector per sentence, they'd have different sizes — models can't handle that.</p>
+      <p>The solution: extract all <strong>unique words across all data</strong> → that's the vocabulary → use vocabulary size as the <strong>fixed dimension</strong> for every vector. Now every sentence maps to the same-size vector. This is why vocabulary matters in every technique.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 1: TF-IDF -->
+  <div class="section" id="tfidf">
+    <div class="section-head">
+      <span class="section-num gold">1</span>
+      <div><div class="section-title">TF-IDF — Term Frequency × Inverse Document Frequency</div><span class="section-sub">The smartest classical encoding — invented by Google, used in their search engine</span></div>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">📖 Definition</div>
+      <p><strong>TF-IDF</strong> is a technique to convert text data into numerical vectors by measuring both <em>how often a word appears in a document</em> (Term Frequency) AND <em>how important/rare that word is across all documents</em> (Inverse Document Frequency).</p>
+      <p>Final score = TF × IDF. This score becomes the value in the vector for that word position.</p>
+    </div>
+
+    <div class="quote">
+      <p>This TF-IDF technique was invented by Google. Before the neural network era, TF-IDF was ruling. It is a very famous interview question — I have given Gen AI interviews recently and they asked about TF-IDF. So don't underestimate this.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>The Core Intuition</h3>
+    <p>Bag of Words already captured word frequency — but it had one big flaw: it treated common meaningless words ("the", "is", "and") with the same respect as rare, meaningful words ("machine", "transformer"). TF-IDF fixes this by <strong>penalizing common words</strong> and <strong>rewarding rare, informative words</strong>.</p>
+
+    <div class="example">
+      <div class="example-head">💡 The Core Idea — Why TF-IDF Is Smarter</div>
+      <div class="example-body">
+        <p>Consider these sentences appearing in documents about AI:</p>
+        <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px;">
+          "the model is good" &nbsp; / &nbsp; "the AI model is fast" &nbsp; / &nbsp; "the transformer model learns"
+        </p>
+        <p style="margin-top:12px;">The word <strong>"the"</strong> appears everywhere → BoW gives it a high count → treated as important. But "the" carries no meaning!</p>
+        <p>The word <strong>"transformer"</strong> appears in only one document → TF-IDF gives it a HIGH weight for that document → correctly identified as a meaningful, important word.</p>
+        <p style="color:var(--teal); font-weight:500; margin-top:8px;">TF-IDF = smarter counting that understands informativeness.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: FORMULAS -->
+  <div class="section" id="formulas">
+    <div class="section-head">
+      <span class="section-num gold">2</span>
+      <div><div class="section-title">The Formulas — Explained from First Principles</div><span class="section-sub">Both formulas, why they work, and what every term means</span></div>
+    </div>
+
+    <h3>Part 1 — Term Frequency (TF)</h3>
+
+    <div class="formula">
+      <div class="formula-title">📐 Term Frequency Formula</div>
+      <div class="formula-body">
+        TF(word, sentence) = <span class="f-highlight">occurrences of word in sentence</span> ÷ <span class="f-gold">total words in sentence</span>
+      </div>
+      <div class="formula-note">Measures: "How dominant is this word in THIS specific document?"</div>
+    </div>
+
+    <div class="example">
+      <div class="example-head">✏️ TF Worked Example — Sentence: "My name is Sunny and Sunny teaches AI"</div>
+      <div class="example-body">
+        <p><strong>Total words in sentence:</strong> 7 (my, name, is, Sunny, and, Sunny, teaches, AI) → wait, let's count: my(1) name(2) is(3) Sunny(4) and(5) Sunny(6) teaches(7) AI(8) = <strong>actually depends on cleanup</strong></p>
+        <p>Simplified by instructor: <strong>Total words = 7</strong></p>
+        <p>How many times does <strong>"Sunny"</strong> appear? → <strong>2 times</strong></p>
+        <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; margin-top:10px;">
+          TF("Sunny") = 2 ÷ 7 = <span style="color:var(--teal); font-weight:600;">0.286</span>
+        </p>
+        <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">This number tells us: "Sunny" makes up 28.6% of this sentence — it's dominating, so it's likely important.</p>
+      </div>
+    </div>
+
+    <div class="example">
+      <div class="example-head">✏️ Another TF Example — "AI is Important, AI is Future, AI is Dangerous"</div>
+      <div class="example-body">
+        <p><strong>Total words:</strong> 9</p>
+        <p>How many times does <strong>"AI"</strong> appear? → <strong>3 times</strong></p>
+        <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; margin-top:8px;">
+          TF("AI") = 3 ÷ 9 = <span style="color:var(--teal); font-weight:600;">0.333</span>
+        </p>
+        <p style="margin-top:10px;">Which word is dominating the sentence? <strong>AI</strong>. TF mathematically proves this — AI has the highest TF score.</p>
+        <p style="font-size:14px; color:var(--text-muted);">Note: "is" also appears 3 times → TF("is") = 3/9 = 0.333 too. But IDF will fix this — "is" appears in many documents so its IDF will be LOW, dragging the final score down.</p>
+      </div>
+    </div>
+
+    <h3>Part 2 — Inverse Document Frequency (IDF)</h3>
+
+    <div class="formula">
+      <div class="formula-title">📐 Inverse Document Frequency Formula</div>
+      <div class="formula-body">
+        IDF(word) = log( <span class="f-highlight">Total number of documents (D)</span> ÷ <span class="f-gold">number of documents containing the word</span> )
+      </div>
+      <div class="formula-note">Measures: "How rare / unique is this word across ALL documents?"</div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">🔑 Two Purposes of IDF</div>
+      <p><strong>Purpose 1:</strong> Reduce the weight of common, unimportant words. If "the" appears in every single document → D / D = 1 → log(1) = 0 → IDF score ≈ 0 → TF×IDF ≈ 0. "The" gets almost zero weight.</p>
+      <p><strong>Purpose 2:</strong> Boost the weight of rare but informative words. A word appearing in only 1 out of 1000 documents → IDF = log(1000/1) = 6.9 → very high → that word gets high importance for that specific document.</p>
+    </div>
+
+    <div class="example">
+      <div class="example-head">✏️ IDF Worked Example</div>
+      <div class="example-body">
+        <p><strong>Data:</strong> 3 sentences total</p>
+        <div style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; margin:10px 0;">
+          D1: I love ML<br>
+          D2: I love DL<br>
+          D3: I like GenAI
+        </div>
+        <p><strong>Question:</strong> What is IDF("love")?</p>
+        <p>Total documents (D) = <strong>3</strong></p>
+        <p>In how many documents does "love" appear? → D1 and D2 → <strong>2 documents</strong></p>
+        <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; margin-top:8px;">
+          IDF("love") = log(3 ÷ 2) = log(1.5) = <span style="color:var(--gold); font-weight:600;">≈ 0.405</span>
+        </p>
+        <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Relatively low IDF — "love" appears in most documents so it's not very rare or distinguishing.</p>
+      </div>
+    </div>
+
+    <h3>Final TF-IDF Score</h3>
+    <div class="formula">
+      <div class="formula-title">📐 Final Formula</div>
+      <div class="formula-body">
+        TF-IDF(word, document) = <span class="f-highlight">TF</span> × <span class="f-gold">IDF</span>
+      </div>
+      <div class="formula-note">TF checks word importance in the current document. IDF checks word importance across all documents. Together they give a meaningful weight.</div>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-label">✓ Summary — TF vs IDF vs TF-IDF</div>
+      <p><strong>TF alone</strong> → can be fooled by common words ("the", "is" appear everywhere)</p>
+      <p><strong>IDF alone</strong> → doesn't consider how frequent the word is in the current document</p>
+      <p><strong>TF × IDF</strong> → best of both: high only when the word is both frequent in THIS document AND rare across ALL documents</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: LOG -->
+  <div class="section" id="log">
+    <div class="section-head">
+      <span class="section-num gold">3</span>
+      <div><div class="section-title">Why Is There a Logarithm in IDF?</div><span class="section-sub">The most common question from the session — answered completely</span></div>
+    </div>
+
+    <div class="quote">
+      <p>Without log, the value could be extreme. Log is keeping everything in a range — a small, manageable range. That is the reason we use log here.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>The Problem Without Log</h3>
+    <p>Imagine you have <strong>1,000 documents</strong>. Let's calculate IDF for words with different rarity:</p>
+
+    <div class="math-block">
+      <div><span class="ml">Rare word</span> (appears in 1 doc): &nbsp; IDF = <span class="mr">1000 ÷ 1 = 1000</span> <span class="ms">← extreme!</span></div>
+      <div><span class="ml">Medium word</span> (appears in 10 docs): &nbsp; IDF = <span class="mr">1000 ÷ 10 = 100</span> <span class="ms">← still large</span></div>
+      <div><span class="ml">Common word</span> (appears in 500 docs): &nbsp; IDF = <span class="mr">1000 ÷ 500 = 2</span> <span class="ms">← small</span></div>
+      <br>
+      <div><span class="ms">Range WITHOUT log: 2 to 1000 ← massive, unmanageable spread</span></div>
+    </div>
+
+    <p>This massive range (2 to 1000) causes problems in ML calculations. The rare word would dominate the model just because of scale, not because of meaning.</p>
+
+    <h3>The Solution: Apply Log</h3>
+
+    <div class="math-block">
+      <div><span class="ml">log(1000)</span> with base E: <span class="mr">6.91</span></div>
+      <div><span class="ml">log(100)</span> with base E: <span class="mr">4.61</span></div>
+      <div><span class="ml">log(2)</span> with base E: <span class="mr">0.69</span></div>
+      <br>
+      <div><span class="ms">Range WITH log: ~0.69 to 6.91 ← compressed, manageable</span></div>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">📌 Three Types of Logarithm in TF-IDF</div>
+      <p><strong>log base 2</strong> → value of log₂(10,000) ≈ 13.19</p>
+      <p><strong>log base 10</strong> → value of log₁₀(10,000) = 4</p>
+      <p><strong>log base e (natural log, written as ln)</strong> → value of ln(10,000) ≈ 9.21</p>
+      <p>Different implementations use different bases. The key point is that all versions <strong>compress the range</strong> of the raw ratio. scikit-learn uses log base e by default.</p>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">💡 One-Line Answer for Interviews</div>
+      <p>We use logarithm in IDF to <strong>normalize/compress the range</strong> of values, preventing extreme IDF values (from very rare words) from dominating the vector calculation.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: WORKED EXAMPLE -->
+  <div class="section" id="worked">
+    <div class="section-head">
+      <span class="section-num gold">4</span>
+      <div><div class="section-title">Complete Worked Example — Building TF-IDF Vectors</div><span class="section-sub">Step by step, exactly as taught in class with the same dataset</span></div>
+    </div>
+
+    <h3>The Dataset</h3>
+    <div class="example">
+      <div class="example-head">📄 Four Documents (same data used in class)</div>
+      <div class="example-body">
+        <div style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; line-height:2;">
+          D1: people watch cricket<br>
+          D2: cricket watch cricket (people give command)<br>
+          D3: people give comment cricket<br>
+          D4: cricket give command
+        </div>
+        <p style="margin-top:10px;"><strong>Step 1 — Vocabulary:</strong> Extract all unique words (alphabetically):</p>
+        <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; font-size:13px;">
+          [comment, cricket, give, people, watch]
+        </p>
+        <p>Vocabulary size = 5 → Every document vector will have 5 positions.</p>
+      </div>
+    </div>
+
+    <h3>Step 2 — Calculate TF for Each Word in D1</h3>
+    <p>D1 = "people watch cricket" → 3 total words</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Word</th><th>In D1?</th><th>Count in D1</th><th>TF = count ÷ 3</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">comment</td><td class="tr">No</td><td>0</td><td>0 ÷ 3 = <strong>0.000</strong></td></tr>
+          <tr><td class="tc">cricket</td><td class="tg">Yes</td><td>1</td><td>1 ÷ 3 = <strong>0.333</strong></td></tr>
+          <tr><td class="tc">give</td><td class="tr">No</td><td>0</td><td>0 ÷ 3 = <strong>0.000</strong></td></tr>
+          <tr><td class="tc">people</td><td class="tg">Yes</td><td>1</td><td>1 ÷ 3 = <strong>0.333</strong></td></tr>
+          <tr><td class="tc">watch</td><td class="tg">Yes</td><td>1</td><td>1 ÷ 3 = <strong>0.333</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Step 3 — Calculate IDF for Each Word (across all 4 documents)</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Word</th><th>Appears in how many docs?</th><th>IDF = log(4 ÷ docs)</th><th>Approx Value</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">comment</td><td>1 doc (D3)</td><td>log(4÷1) = log(4)</td><td><strong>1.386</strong></td></tr>
+          <tr><td class="tc">cricket</td><td>3 docs (D1,D2,D4)</td><td>log(4÷3) ≈ log(1.33)</td><td><strong>0.288</strong></td></tr>
+          <tr><td class="tc">give</td><td>2 docs (D2,D4 or D3)</td><td>log(4÷2) = log(2)</td><td><strong>0.693</strong></td></tr>
+          <tr><td class="tc">people</td><td>2 docs (D1,D3)</td><td>log(4÷2) = log(2)</td><td><strong>0.693</strong></td></tr>
+          <tr><td class="tc">watch</td><td>2 docs (D1,D2)</td><td>log(4÷2) = log(2)</td><td><strong>0.693</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Step 4 — Final TF-IDF Vector for D1</h3>
+    <p>Multiply TF × IDF for each word:</p>
+
+    <div class="math-block">
+      <div><span class="ml">comment:</span> &nbsp; TF(0.000) × IDF(1.386) = <span class="mr">0.000</span> <span class="ms">← not in D1, so 0</span></div>
+      <div><span class="ml">cricket:</span> &nbsp; TF(0.333) × IDF(0.288) = <span class="mr">≈ 0.096</span></div>
+      <div><span class="ml">give:</span> &nbsp;&nbsp;&nbsp;&nbsp; TF(0.000) × IDF(0.693) = <span class="mr">0.000</span> <span class="ms">← not in D1</span></div>
+      <div><span class="ml">people:</span> &nbsp; TF(0.333) × IDF(0.693) = <span class="mr">≈ 0.231</span></div>
+      <div><span class="ml">watch:</span> &nbsp;&nbsp; TF(0.333) × IDF(0.693) = <span class="mr">≈ 0.231</span></div>
+      <br>
+      <div><span class="md">D1 TF-IDF Vector = [0.000, 0.096, 0.000, 0.231, 0.231]</span></div>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">🔍 Reading the D1 Vector</div>
+      <p>"people" and "watch" score 0.231 — they're in D1 and rare enough to be meaningful.</p>
+      <p>"cricket" scores only 0.096 — it's in D1 but also in 3 other documents, so IDF penalizes it (less unique to D1).</p>
+      <p>"comment" and "give" score 0.000 — not in D1 at all.</p>
+      <p>This is TF-IDF working correctly: words frequent in THIS document AND rare across all documents get the highest scores.</p>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">💡 Key Clarification from Class</div>
+      <p><strong>TF is calculated at the sentence/document level</strong> — for each specific document separately.</p>
+      <p><strong>IDF is calculated at the corpus level</strong> — looking across ALL documents. It's the same for every document.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 5: PRACTICAL -->
+  <div class="section" id="practical">
+    <div class="section-head">
+      <span class="section-num gold">5</span>
+      <div><div class="section-title">Practical Code — TF-IDF in Python</div><span class="section-sub">Complete sklearn implementation as taught in class</span></div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-head">
+        <span class="code-lang">Python — TF-IDF with sklearn</span>
+        <div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div>
+      </div>
+      <pre><span class="cm"># Step 1: Import TfidfVectorizer from sklearn
+# Same pattern as CountVectorizer — sklearn makes it consistent</span>
+<span class="kw">from</span> <span class="imp">sklearn.feature_extraction.text</span> <span class="kw">import</span> <span class="fn">TfidfVectorizer</span>
+
+<span class="cm"># Step 2: Define your documents (raw sentences — no manual tokenization needed)</span>
+<span class="var">documents</span> = [
+    <span class="str">"people watch cricket"</span>,
+    <span class="str">"cricket watch cricket"</span>,
+    <span class="str">"people give comment cricket"</span>,
+    <span class="str">"cricket give command"</span>
+]
+
+<span class="cm"># Step 3: Create the TF-IDF object</span>
+<span class="var">tfidf_obj</span> = <span class="fn">TfidfVectorizer</span>()
+
+<span class="cm"># Step 4: fit_transform — learns vocabulary AND calculates TF-IDF in one step
+# Returns a sparse matrix of TF-IDF scores</span>
+<span class="var">tfidf_vector</span> = <span class="var">tfidf_obj</span>.<span class="fn">fit_transform</span>(<span class="var">documents</span>)
+
+<span class="cm"># Step 5: View the TF-IDF matrix as readable numbers</span>
+<span class="fn">print</span>(<span class="str">"TF-IDF Matrix:\n"</span>, <span class="var">tfidf_vector</span>.<span class="fn">toarray</span>())
+
+<span class="cm"># Step 6: View each document's vector separately</span>
+<span class="kw">for</span> <span class="var">vector</span> <span class="kw">in</span> <span class="var">tfidf_vector</span>:
+    <span class="fn">print</span>(<span class="var">vector</span>)
+
+<span class="cm"># Step 7: Check the vocabulary (always alphabetically sorted)</span>
+<span class="fn">print</span>(<span class="str">"\nVocabulary:"</span>, <span class="var">tfidf_obj</span>.<span class="fn">get_feature_names_out</span>())</pre>
+    </div>
+
+    <h4>Code Breakdown — What Each Line Does</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Line</th><th>What It Does</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">TfidfVectorizer()</td><td>Creates the TF-IDF object — the class that holds all logic</td></tr>
+          <tr><td class="tc">fit_transform(docs)</td><td>Scans all documents (fit) → builds vocabulary → computes TF, IDF, TF×IDF (transform) → returns matrix</td></tr>
+          <tr><td class="tc">.toarray()</td><td>Converts sparse matrix to readable NumPy array of decimal numbers</td></tr>
+          <tr><td class="tc">get_feature_names_out()</td><td>Shows the vocabulary — the column headers for the matrix</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout blue">
+      <div class="callout-label">🛠️ The sklearn Pattern — Always the Same</div>
+      <p>All three encoding classes follow the same API: <code>fit()</code> → <code>transform()</code> → or <code>fit_transform()</code></p>
+      <p><strong>OHE:</strong> <code>OneHotEncoder()</code> → <code>fit_transform(words_2d)</code></p>
+      <p><strong>BoW:</strong> <code>CountVectorizer()</code> → <code>fit_transform(sentences)</code></p>
+      <p><strong>TF-IDF:</strong> <code>TfidfVectorizer()</code> → <code>fit_transform(sentences)</code></p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: PROS CONS -->
+  <div class="section" id="proscons">
+    <div class="section-head">
+      <span class="section-num gold">6</span>
+      <div><div class="section-title">TF-IDF — Pros & Cons</div><span class="section-sub">Essential for interviews — know both sides thoroughly</span></div>
+    </div>
+
+    <div class="pc-grid">
+      <div class="pc-box pc-green">
+        <div class="pc-title">✅ Advantages</div>
+        <ul class="pc-list">
+          <li><strong>Captures importance</strong>, not just count — rare words get higher weight</li>
+          <li><strong>Reduces impact of common words</strong> — "the", "is", "and" get near-zero weights</li>
+          <li>Better than Bag of Words for search and retrieval</li>
+          <li>Used historically in <strong>Google's search engine</strong> for page ranking</li>
+          <li>Works for <strong>information retrieval</strong> and document ranking</li>
+          <li>No model training required — pure calculation</li>
+          <li>Simple and mathematically interpretable</li>
+        </ul>
+      </div>
+      <div class="pc-box pc-red">
+        <div class="pc-title">❌ Disadvantages</div>
+        <ul class="pc-list">
+          <li><strong>Ignores word order</strong> — "dog bites man" = "man bites dog"</li>
+          <li><strong>No semantic understanding</strong> — "love" and "like" look completely different</li>
+          <li><strong>Sparse, high-dimensional vectors</strong> — same problem as OHE and BoW</li>
+          <li><strong>Cannot handle context</strong> — "bank" (river) vs "bank" (money) treated same</li>
+          <li><strong>Out-of-Vocabulary problem</strong> — new words at inference get score of 0</li>
+          <li>Outdated — replaced by modern embedding models in production</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">📌 TF-IDF's Legacy — Where It Still Matters</div>
+      <p><strong>BM25</strong> (Best Match 25) is an advanced version of TF-IDF, and it is still actively used today inside <strong>RAG systems</strong> as the "sparse retrieval" component. You will encounter BM25 in the RAG chapter.</p>
+      <p>Google's original search engine used TF-IDF for indexing. It would convert queries and web pages to TF-IDF vectors, then perform similarity search to rank results.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 7: ENCODING VS EMBEDDING -->
+  <div class="section" id="encoding-vs-embedding">
+    <div class="section-head">
+      <span class="section-num purple">7</span>
+      <div><div class="section-title">Critical Distinction — Encoding vs Embedding</div><span class="section-sub">One of the most important conceptual clarifications of the entire module</span></div>
+    </div>
+
+    <div class="quote">
+      <p>TF-IDF is an encoding technique, NOT an embedding technique. If any neural network is required, if any transformer network is required — the generated vectors from that are called embeddings. And why do we use the word "embedding"? Because those vectors have semantic meaning.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>Encoding (OHE, BoW, TF-IDF, BM25)</th><th>Embedding (Word2Vec, BERT, etc.)</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Training Required</td><td class="tr">❌ No — pure calculation</td><td class="tg">✅ Yes — neural network training</td></tr>
+          <tr><td class="tc">Semantic Meaning</td><td class="tr">❌ None — "love" ≠ "like"</td><td class="tg">✅ Yes — "love" ≈ "like"</td></tr>
+          <tr><td class="tc">Context Awareness</td><td class="tr">❌ "bank" always same</td><td class="tg">✅ "bank" changes by context</td></tr>
+          <tr><td class="tc">Vector Type</td><td>Sparse (mostly 0s)</td><td>Dense (all meaningful values)</td></tr>
+          <tr><td class="tc">Era</td><td>Pre-2013 (classical NLP)</td><td>2013–present</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">💡 Simple Rule to Remember</div>
+      <p><strong>No training → Encoding</strong> (OHE, BoW, TF-IDF, BM25)</p>
+      <p><strong>Neural network training → Embedding</strong> (Word2Vec, BERT, GPT embeddings, OpenAI embeddings)</p>
+      <p>The word "embedding" specifically implies the vector carries semantic meaning — something you can only get from a trained model.</p>
+    </div>
+
+    <h3>Why Embeddings Are Needed — The Key Limitation Example</h3>
+
+    <div class="example">
+      <div class="example-head">🔴 The Problem That Encoding Cannot Solve</div>
+      <div class="example-body">
+        <p>Consider these two sentences:</p>
+        <div style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; margin:10px 0; font-size:13px;">
+          Sentence 1: "I like this movie"<br>
+          Sentence 2: "I love this film"
+        </div>
+        <p>Any human would say these mean essentially the same thing. But with OHE / BoW / TF-IDF:</p>
+        <p>→ "like" ≠ "love" → treated as completely different words<br>
+        → "movie" ≠ "film" → treated as completely different words</p>
+        <p>The two sentences would have <strong>zero overlap in their vectors</strong> despite being semantically identical.</p>
+        <p style="color:var(--teal); font-weight:500; margin-top:8px;">Embeddings solve this: they learn that "like" ≈ "love" and "movie" ≈ "film" from training data, placing similar words close in vector space.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 8: WORD2VEC -->
+  <div class="section" id="word2vec">
+    <div class="section-head">
+      <span class="section-num purple">8</span>
+      <div><div class="section-title">Word2Vec — Classical Neural Embedding</div><span class="section-sub">Google's 2013 research paper that revolutionized NLP</span></div>
+    </div>
+
+    <div class="callout purple">
+      <div class="callout-label">📖 Definition</div>
+      <p><strong>Word2Vec</strong> is a neural network-based method (invented by Google, 2013) to represent words as <strong>dense vectors</strong> where <em>semantically similar words have similar vectors</em>.</p>
+      <p>Research paper: "Efficient Estimation of Word Representations in Vector Space" (2013). This paper is in the GitHub repo for this session.</p>
+    </div>
+
+    <h3>Two Ways to Use Word2Vec</h3>
+
+    <div class="pc-grid">
+      <div class="pc-box" style="background:var(--purple-dim); border-color:var(--purple);">
+        <div class="pc-title" style="color:var(--purple);">Option 1 — Pre-Trained Model</div>
+        <ul class="pc-list" style="">
+          <li>Google already trained it on billions of words</li>
+          <li>You download and use it directly — no training needed</li>
+          <li>Produces 300-dimensional vectors per word</li>
+          <li>Available via Gensim library</li>
+          <li style="color:var(--teal); list-style:none; padding-left:0; margin-top:8px;">✓ This is what the class focuses on</li>
+        </ul>
+      </div>
+      <div class="pc-box" style="background:var(--blue-dim); border-color:var(--blue);">
+        <div class="pc-title" style="color:var(--blue);">Option 2 — Custom Model</div>
+        <ul class="pc-list">
+          <li>You train Word2Vec on YOUR own dataset</li>
+          <li>Useful for domain-specific language (medical, legal)</li>
+          <li>Requires training time and compute</li>
+          <li>Notebook available on GitHub to practice</li>
+          <li style="color:var(--text-muted); list-style:none; padding-left:0; margin-top:8px; font-size:13px;">Not covered in depth — this is classical NLP scope</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Core Idea: Representing Words as Features</h3>
+
+    <div class="quote">
+      <p>Word2Vec represents a word in terms of features — and those features are being learned from the data itself. The model is trying to find the best possible features to represent the word. That is the fundamental idea.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <p>Instead of 0s and 1s or simple counts, Word2Vec gives each word a vector of learned decimal values — each value representing a latent feature of that word.</p>
+
+    <h3>Feature Representation — The Analogy Explained in Class</h3>
+    <p>The instructor used this brilliant example to explain what "features" mean for words:</p>
+
+    <div class="example">
+      <div class="example-head">🎯 Instructor's Word Feature Analogy — Sunny vs Tiger</div>
+      <div class="example-body">
+        <p>Let's say we define 5 features for words: King, Speaks, Runs, Rich, Teacher. We rate each word 0 to 1 for each feature:</p>
+      </div>
+    </div>
+
+    <div class="feat-table">
+      <table>
+        <thead><tr><th>Feature</th><th>Sunny (value)</th><th>Reasoning</th><th>Tiger (value)</th><th>Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td>King</td><td>0.0</td><td>Sunny is not a king</td><td>0.0</td><td>Tiger is not a king</td></tr>
+          <tr><td>Speaks</td><td>1.0</td><td>Sunny speaks clearly</td><td>0.0</td><td>Tigers can't speak</td></tr>
+          <tr><td>Runs</td><td>0.6</td><td>Can run, but not like a cheetah</td><td>0.9</td><td>Very fast animal</td></tr>
+          <tr><td>Rich</td><td>0.3</td><td>Not particularly rich</td><td>0.0</td><td>Tiger doesn't have money</td></tr>
+          <tr><td>Teacher</td><td>1.0</td><td>Sunny is a teacher by heart</td><td>0.0</td><td>Tiger is not a teacher</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="example">
+      <div class="example-head">📐 Resulting Word Vectors</div>
+      <div class="example-body">
+        <div style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; line-height:2.2;">
+          Vector("Sunny") = [<span style="color:var(--teal);">0.0, 1.0, 0.6, 0.3, 1.0</span>]<br>
+          Vector("Tiger")  = [<span style="color:var(--gold);">0.0, 0.0, 0.9, 0.0, 0.0</span>]
+        </div>
+        <p style="margin-top:12px;">These two vectors are VERY different → mathematically we can say "Sunny" and "Tiger" are not similar. Correct!</p>
+        <p>Now imagine doing this for "King" and "Queen" — their vectors would be close in most features → the model would recognize them as similar. That's the semantic power of Word2Vec.</p>
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">⭐ The Famous Word2Vec Demonstration</div>
+      <p>Google's trained model can do this:</p>
+      <p style="font-family:'IBM Plex Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; font-size:13px; margin:8px 0;">
+        vector("King") - vector("Man") + vector("Woman") ≈ vector("Queen")
+      </p>
+      <p>The model learned that "King" and "Queen" have the same relationship as "Man" and "Woman". This is arithmetic on meaning — something no classical encoding can do.</p>
+    </div>
+
+    <h3>Google's Pre-Trained Model: 300-Dimensional Vectors</h3>
+    <div class="callout teal">
+      <div class="callout-label">📐 Dimensions in Word2Vec</div>
+      <p>Google trained Word2Vec on Google News data (billions of words). Each word is represented as a <strong>300-dimensional vector</strong>. That means each word has 300 learned features.</p>
+      <p>Unlike OHE where dimension = vocabulary size (could be 50,000+), Word2Vec always uses a fixed, much smaller dimension (100, 200, or 300).</p>
+      <p>The vectors are <strong>dense</strong> — all 300 values are meaningful floats, no zeros.</p>
+    </div>
+
+    <h3>Two Architectures in Word2Vec</h3>
+    <div class="callout blue">
+      <div class="callout-label">📌 CBOW and Skip-Gram — Coming in Next Class</div>
+      <p>The instructor mentioned two techniques inside Word2Vec: <strong>CBOW (Continuous Bag of Words)</strong> and <strong>Skip-Gram</strong>. These will be taught in the next session in detail.</p>
+      <p>Brief preview: CBOW predicts a target word from surrounding context words. Skip-Gram predicts surrounding context words given a target word.</p>
+    </div>
+
+    <h3>Why We Learn Word2Vec Even Though It's "Old"</h3>
+    <div class="callout purple">
+      <div class="callout-label">🎯 Three Reasons to Learn Word2Vec</div>
+      <p><strong>1. Fundamentals:</strong> Understanding how neural embeddings work is the foundation for understanding Transformers and LLMs.</p>
+      <p><strong>2. Interviews:</strong> Word2Vec is still asked about in GenAI interviews — shows depth of NLP knowledge.</p>
+      <p><strong>3. Transformer connection:</strong> The initial embedding layer inside Transformer models uses Word2Vec-like concepts. When tokens are converted to embeddings before entering the Transformer, that's Word2Vec concepts in action.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 9: NEURAL NETWORK RECAP -->
+  <div class="section" id="neural-net">
+    <div class="section-head">
+      <span class="section-num purple">9</span>
+      <div><div class="section-title">Neural Network Recap — Foundation for Word2Vec</div><span class="section-sub">The quick review Sunny gave in class — just enough to understand Word2Vec</span></div>
+    </div>
+
+    <div class="callout red">
+      <div class="callout-label">⚠️ Note</div>
+      <p>This is NOT a deep dive into neural networks — that belongs in the prerequisite course. This is just a quick recap to give context for how Word2Vec works. If you need more depth, go through the prerequisite sessions on krishnaik.academy.</p>
+    </div>
+
+    <h3>Key Components of a Neural Network</h3>
+
+    <div class="arch-box">
+      <div class="arch-layer">
+        <div class="arch-label">INPUT<br>LAYER</div>
+        <div class="arch-node input">X1</div>
+        <div class="arch-node input">X2</div>
+        <div class="arch-node input">X3</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-layer">
+        <div class="arch-label">HIDDEN<br>LAYER</div>
+        <div class="arch-node hidden">H1</div>
+        <div class="arch-node hidden">H2</div>
+        <div class="arch-node hidden">H3</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-layer">
+        <div class="arch-label">OUTPUT<br>LAYER</div>
+        <div class="arch-node output">Ŷ</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Term</th><th>What It Means</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Perceptron</td><td>A single neuron — the simplest form of a neural network. Takes inputs, multiplies by weights, adds bias, passes through activation function.</td></tr>
+          <tr><td class="tc">Multi-Layer Perceptron (MLP)</td><td>Multiple neurons in multiple layers. This is what most people mean by "neural network".</td></tr>
+          <tr><td class="tc">Weights (W)</td><td>The learnable parameters. Initially random. Updated during training to reduce loss.</td></tr>
+          <tr><td class="tc">Bias (B)</td><td>An additional learnable value that shifts the activation function, giving the network more flexibility.</td></tr>
+          <tr><td class="tc">Forward Propagation (FP)</td><td>Passing input data through the network to get a prediction. Calculation: output = activation(W·X + B)</td></tr>
+          <tr><td class="tc">Loss</td><td>The difference between the predicted output and the actual value. We want to minimize this.</td></tr>
+          <tr><td class="tc">Backward Propagation (BP)</td><td>Using the loss to calculate how much to adjust each weight. Uses gradient descent (optimizer).</td></tr>
+          <tr><td class="tc">Gradient Descent</td><td>The optimizer — calculates the direction to adjust weights to minimize loss. "Going downhill" in the loss landscape.</td></tr>
+          <tr><td class="tc">Epoch</td><td>One complete forward pass + backward pass through the entire dataset. = 1 FP + 1 BP = 1 epoch.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>How Word2Vec Uses This</h3>
+    <p>Word2Vec trains a small neural network on a specific task (e.g., "predict the context word given a target word"). After training, we don't use the network for predictions — we extract the <strong>learned weight matrix</strong>. That weight matrix IS the word embeddings. Each row in the matrix = the embedding vector for one word.</p>
+
+    <div class="callout teal">
+      <div class="callout-label">💡 House Price Feature Analogy from Class</div>
+      <p>The instructor used house price prediction to explain "features":</p>
+      <p>To predict whether to buy a house, we use features like: <strong>size (sq ft)</strong>, <strong>location (city center vs outskirt)</strong>, <strong>number of bedrooms</strong>. These numeric features feed into a ML model.</p>
+      <p>Similarly, Word2Vec represents each word as a set of learned features (dimensions). Instead of manually defined features like "is_king", "can_speak", the network learns the best features automatically from the data.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 10: SOTA EMBEDDING -->
+  <div class="section" id="features">
+    <div class="section-head">
+      <span class="section-num blue">10</span>
+      <div><div class="section-title">SOTA Embedding Models</div><span class="section-sub">The state-of-the-art methods you'll actually use in GenAI projects</span></div>
+    </div>
+
+    <div class="callout blue">
+      <div class="callout-label">🚀 SOTA = State of the Art</div>
+      <p>SOTA embedding models are transformer-based — they are the embedding models used in all modern GenAI applications, RAG systems, and semantic search.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>SOTA Embedding Source</th><th>Model Name</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Hugging Face</td><td>Sentence Transformers (e.g., all-MiniLM-L6-v2)</td><td>Open source, free, best for RAG</td></tr>
+          <tr><td class="tc">OpenAI</td><td>text-embedding-3-small, text-embedding-3-large</td><td>API-based, paid, very powerful</td></tr>
+          <tr><td class="tc">Google</td><td>Gemini Embedding (Gemini models)</td><td>API-based, competitive performance</td></tr>
+          <tr><td class="tc">Anthropic (Claude)</td><td>Claude doesn't have a dedicated embedding model</td><td>Use Hugging Face or OpenAI</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout purple">
+      <div class="callout-label">🎯 This Is Our Destination</div>
+      <p>In any real GenAI application using embeddings, you will use one of the SOTA models above — not Word2Vec, not TF-IDF.</p>
+      <p>We learn the classical methods to understand <em>why</em> they're needed and <em>what problem</em> they solve. But when you build a RAG system in Module 3+, you'll call <code>openai.embeddings.create()</code> or load a Sentence Transformer — that's it.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 11: INTERVIEW PREP -->
+  <div class="section" id="interview">
+    <div class="section-head">
+      <span class="section-num red">11</span>
+      <div><div class="section-title">Interview Preparation</div><span class="section-sub">From real GenAI interview questions the instructor has personally faced</span></div>
+    </div>
+
+    <div class="interview-section">
+      <h3>🎯 Must-Know Interview Questions — TF-IDF & Word2Vec</h3>
+
+      <div class="iq">
+        <div class="q">Q1: What is TF-IDF and why is it better than Bag of Words?</div>
+        <div class="a">TF-IDF (Term Frequency × Inverse Document Frequency) improves upon BoW by measuring not just how frequently a word appears, but also how important/rare it is across all documents. BoW gives equal credit to common words like "the" and meaningful words like "transformer." TF-IDF penalizes common words (low IDF) and rewards rare, informative words (high IDF). The result is a smarter weighting that better represents what each document is actually about.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q2: Why is there a logarithm in the IDF formula?</div>
+        <div class="a">Without a log, IDF values can be extremely large (e.g., 1000/1 = 1000 for a very rare word). This creates an extreme range of values that makes ML calculations unstable. Applying log compresses this range — log(1000) ≈ 6.9 — keeping all IDF values manageable. In ML, we prefer data in small, normalized ranges for stable gradient computation. Log can be base 2, base 10, or natural log (e), all achieving the same normalization effect.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q3: What is the difference between encoding and embedding?</div>
+        <div class="a">Encoding (OHE, BoW, TF-IDF, BM25) converts text to numbers using pure calculations — no model training involved. The resulting vectors have no semantic meaning. Embedding uses a trained neural network to create vectors — the model learns from data, so semantically similar words end up with similar vectors. Embeddings are dense, compact, and semantically meaningful. The rule: if training was involved → embedding. If it's just math → encoding.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q4: What is Word2Vec and how does it work?</div>
+        <div class="a">Word2Vec is a neural network-based model (Google, 2013) that represents words as dense floating-point vectors. It trains a neural network on a text corpus using either CBOW (predict target word from context) or Skip-Gram (predict context words from target). After training, the learned weight matrix serves as the embedding — each row is the vector for one word. Similar words end up with similar vectors because they appear in similar contexts during training. The Google pre-trained model produces 300-dimensional vectors.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q5: What are the limitations of TF-IDF?</div>
+        <div class="a">Five main limitations: (1) Ignores word order — "dog bites man" and "man bites dog" produce same vectors. (2) No semantic understanding — "love" and "like" appear completely unrelated. (3) High-dimensional sparse vectors — dimension equals vocabulary size, mostly zeros. (4) Cannot handle context — "bank" (river) and "bank" (finance) treated identically. (5) Out-of-Vocabulary problem — new unseen words score zero.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q6: Where is TF-IDF still used today?</div>
+        <div class="a">TF-IDF's advanced version, BM25, is still actively used in RAG (Retrieval Augmented Generation) systems as the sparse retrieval component. BM25 ranks documents by relevance to a query and is the backbone of many search engines. Hybrid RAG systems combine BM25 (sparse) with transformer embeddings (dense) for the best retrieval results. Google used TF-IDF in their early search engine for page indexing and ranking.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q7: What is an epoch in neural network training?</div>
+        <div class="a">One epoch = one complete forward propagation (FP) through the entire training dataset + one complete backward propagation (BP). During FP, we calculate the prediction and loss. During BP (using gradient descent), we adjust the weights to reduce the loss. Multiple epochs are run until the model converges to the best possible weights.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 12: ROADMAP -->
+  <div class="section" id="roadmap">
+    <div class="section-head">
+      <span class="section-num blue">12</span>
+      <div><div class="section-title">Where We Are & What's Next</div><span class="section-sub">Course roadmap updated after this session</span></div>
+    </div>
+
+    <div class="roadmap">
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot done">✓</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>One-Hot Encoding & Bag of Words (Classes 1 & 2)</strong><span>Binary and count-based encoding, practical with sklearn, pros/cons</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot done">✓</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>TF-IDF (Today)</strong><span>Formula derivation, worked example, log normalization, Python code, pros/cons</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot done">✓</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>Encoding vs Embedding distinction (Today)</strong><span>Critical conceptual clarity — no training = encoding, neural training = embedding</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot done">✓</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>Word2Vec Introduction (Today)</strong><span>Classical neural embedding, feature representation analogy, pre-trained vs custom</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot now">→</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>Word2Vec Deep Dive — CBOW & Skip-Gram (Next Class)</strong><span>Two Word2Vec architectures, how the neural network is actually trained, Gensim practical</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot next">5</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>SOTA Embedding Models (Upcoming)</strong><span>Sentence Transformers, OpenAI embeddings, Gemini embeddings — real tools you'll use</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot next">6</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>Transformer Architecture (Next Week)</strong><span>Attention mechanism, encoder-decoder, the backbone of all modern LLMs</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot next">7</div><div class="rm-line"></div></div>
+        <div class="rm-content"><strong>Core GenAI — Module 3 (LangChain starts here)</strong><span>LLM APIs, fine-tuning, RAG, Agents, MCP, Guardrails</span></div>
+      </div>
+      <div class="rm-item">
+        <div class="rm-left"><div class="rm-dot next">8</div></div>
+        <div class="rm-content"><strong>Cloud + End-to-End Projects</strong><span>GCP, Azure AI Foundry, AWS Bedrock, full application builds</span></div>
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-label">📌 Assignment for This Session</div>
+      <p>On GitHub (Full Stack GenAI Bootcamp 1.0 → April 5th folder):</p>
+      <p>Take real-world data (scrape Flipkart/Amazon reviews, or use synthetic data from ChatGPT), apply OHE → BoW → TF-IDF, and build a simple sentiment classification model using Logistic Regression or Naive Bayes.</p>
+      <p><strong>Important from Q&A:</strong> Always split data into train/test BEFORE fitting the vectorizer. Fit on train data only, then transform on test data. Fitting on all data before splitting = data leakage = fake high accuracy.</p>
+    </div>
+
+    <div class="callout blue">
+      <div class="callout-label">🔧 Environment Note — From Q&A</div>
+      <p>Use <strong>Python 3.11</strong> with a UV virtual environment. The main issue several students faced: not having a system-level Python installation. UV manages Python versions but your system needs Python installed first.</p>
+      <p>If your kernel isn't showing in VS Code: reload VS Code window → View → Command Palette → "Developer: Reload Window". If still not showing, it's likely a RAM/system resources issue — restart your machine.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Full Stack GenAI Bootcamp 1.0 &nbsp;·&nbsp; Session: <strong>TF-IDF, Word2Vec & Embeddings — Class 3</strong><br>
+  <span style="margin-top:6px; display:block;">GitHub: <strong>Full Stack GenAI Bootcamp 1.0</strong> &nbsp;·&nbsp; Platform: <strong>krishnaik.academy</strong></span>
+</footer>
+
+</body>
+</html>

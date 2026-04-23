@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word2Vec Deep Dive — CBOW, Skip-gram & Embeddings Practical</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,400&family=Instrument+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7f3;
+    --surface: #ffffff;
+    --surface2: #f1f0eb;
+    --border: #e2ddd4;
+    --text: #1c1a16;
+    --muted: #6b6558;
+    --dim: #b8b2a6;
+    --teal: #0f7b6c;
+    --teal-light: #d4f0eb;
+    --gold: #b87d0f;
+    --gold-light: #fdf0d4;
+    --red: #b84040;
+    --red-light: #fde8e8;
+    --purple: #6a3fa0;
+    --purple-light: #ede4f8;
+    --blue: #2563a8;
+    --blue-light: #deeaf8;
+    --green: #1a7a3a;
+    --green-light: #d8f0e2;
+    --ink: #1c1a16;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Instrument Sans',sans-serif; font-size:16.5px; line-height:1.8; }
+
+  /* HERO */
+  .hero { background:var(--ink); color:#f8f7f3; padding:60px 40px 52px; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; top:-60px; right:-40px; width:340px; height:340px; border-radius:50%; border:1px solid rgba(255,255,255,0.06); }
+  .hero::after { content:''; position:absolute; bottom:-80px; left:15%; width:240px; height:240px; border-radius:50%; border:1px solid rgba(255,255,255,0.04); }
+  .hero-inner { max-width:920px; margin:0 auto; position:relative; z-index:1; }
+  .hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(15,123,108,0.25); border:1px solid rgba(15,123,108,0.5); color:#4dcfbe; border-radius:20px; padding:4px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; margin-bottom:22px; }
+  h1 { font-family:'Fraunces',serif; font-size:clamp(28px,5vw,56px); font-weight:900; line-height:1.1; margin-bottom:16px; }
+  h1 .a1 { color:#4dcfbe; }
+  h1 .a2 { color:#f0c060; }
+  .hero-sub { font-size:15px; color:rgba(248,247,243,0.65); max-width:560px; margin-bottom:28px; font-weight:300; }
+  .hero-pills { display:flex; flex-wrap:wrap; gap:10px; }
+  .pill { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(248,247,243,0.55); }
+  .pill span { color:#f8f7f3; font-weight:500; }
+
+  /* NAV */
+  .nav { background:var(--surface); border-bottom:1px solid var(--border); padding:0 40px; display:flex; align-items:center; gap:2px; overflow-x:auto; position:sticky; top:0; z-index:100; }
+  .nav-lbl { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; padding:15px 12px 15px 0; border-right:1px solid var(--border); margin-right:8px; white-space:nowrap; flex-shrink:0; }
+  .nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:15px 12px; white-space:nowrap; border-bottom:2px solid transparent; transition:all 0.2s; flex-shrink:0; }
+  .nav a:hover { color:var(--teal); border-bottom-color:var(--teal); }
+
+  /* MAIN */
+  .main { max-width:920px; margin:0 auto; padding:48px 30px; }
+
+  /* INTRO */
+  .intro { background:var(--blue-light); border:1px solid var(--blue); border-radius:10px; padding:24px 28px; margin-bottom:52px; }
+  .intro p { font-size:15px; margin-bottom:8px; font-weight:300; }
+  .intro p:last-child { margin-bottom:0; }
+
+  /* SECTION */
+  .section { margin-bottom:64px; scroll-margin-top:60px; }
+  .sec-head { display:flex; align-items:center; gap:14px; margin-bottom:26px; padding-bottom:14px; border-bottom:2px solid var(--border); }
+  .sec-num { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; padding:4px 10px; border-radius:4px; flex-shrink:0; }
+  .n-teal { background:var(--teal); color:#fff; }
+  .n-gold { background:var(--gold); color:#fff; }
+  .n-purple { background:var(--purple); color:#fff; }
+  .n-red { background:var(--red); color:#fff; }
+  .n-blue { background:var(--blue); color:#fff; }
+  .n-green { background:var(--green); color:#fff; }
+  .sec-title { font-family:'Fraunces',serif; font-size:22px; font-weight:700; }
+  .sec-sub { font-size:13px; color:var(--muted); display:block; margin-top:3px; }
+
+  h3 { font-family:'Fraunces',serif; font-size:18px; font-weight:700; margin:30px 0 10px; color:var(--ink); }
+  h4 { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--teal); letter-spacing:1.5px; text-transform:uppercase; margin:20px 0 8px; }
+  p { margin-bottom:12px; font-weight:300; }
+  p strong { font-weight:600; }
+
+  /* QUOTE */
+  .quote { background:var(--ink); border-radius:8px; padding:20px 24px; margin:20px 0; }
+  .quote p { color:rgba(248,247,243,0.8); font-style:italic; font-size:15px; margin:0; padding-left:14px; border-left:2px solid #4dcfbe; font-weight:300; }
+  .quote cite { display:block; padding-left:14px; margin-top:8px; font-size:11px; font-style:normal; font-family:'JetBrains Mono',monospace; color:#4dcfbe; letter-spacing:1px; }
+
+  /* CALLOUT */
+  .callout { border-radius:8px; padding:18px 22px; margin:18px 0; border:1px solid; }
+  .callout-lbl { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .callout p { font-size:15.5px; margin-bottom:6px; }
+  .callout p:last-child { margin-bottom:0; }
+  .c-teal { background:var(--teal-light); border-color:var(--teal); } .c-teal .callout-lbl { color:var(--teal); }
+  .c-gold { background:var(--gold-light); border-color:var(--gold); } .c-gold .callout-lbl { color:var(--gold); }
+  .c-red { background:var(--red-light); border-color:var(--red); } .c-red .callout-lbl { color:var(--red); }
+  .c-purple { background:var(--purple-light); border-color:var(--purple); } .c-purple .callout-lbl { color:var(--purple); }
+  .c-blue { background:var(--blue-light); border-color:var(--blue); } .c-blue .callout-lbl { color:var(--blue); }
+  .c-green { background:var(--green-light); border-color:var(--green); } .c-green .callout-lbl { color:var(--green); }
+
+  /* EXAMPLE BLOCK */
+  .ex { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin:18px 0; box-shadow:0 2px 8px rgba(28,26,22,0.06); }
+  .ex-head { background:var(--ink); padding:8px 18px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#f0c060; letter-spacing:1.5px; text-transform:uppercase; }
+  .ex-body { padding:18px 20px; }
+  .ex-body p { font-size:15.5px; margin-bottom:8px; }
+  .ex-body p:last-child { margin-bottom:0; }
+
+  /* CODE */
+  .code-wrap { background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden; margin:18px 0; box-shadow:0 8px 24px rgba(0,0,0,0.18); }
+  .code-head { background:#161b22; padding:10px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363d; }
+  .code-lang { font-family:'JetBrains Mono',monospace; font-size:11px; color:#4dcfbe; letter-spacing:2px; text-transform:uppercase; }
+  .dots { display:flex; gap:6px; } .d { width:10px; height:10px; border-radius:50%; }
+  .dr{background:#ff5f56;} .dy{background:#ffbd2e;} .dg{background:#27c93f;}
+  pre { padding:22px; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.85; color:#adbac7; }
+  .kw{color:#f47067;} .fn{color:#79c0ff;} .str{color:#96d0ff;} .cm{color:#484f58;font-style:italic;} .var{color:#ffa657;} .num{color:#f69d50;} .imp{color:#56d364;}
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; margin:18px 0; border-radius:8px; border:1px solid var(--border); box-shadow:0 2px 6px rgba(28,26,22,0.06); }
+  table { width:100%; border-collapse:collapse; font-size:14.5px; background:var(--surface); }
+  thead tr { background:var(--ink); } thead th { padding:12px 16px; text-align:left; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(248,247,243,0.7); font-weight:500; }
+  tbody td { padding:10px 16px; border-bottom:1px solid var(--border); font-weight:300; vertical-align:top; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:nth-child(even) { background:var(--surface2); }
+  .tc { color:var(--teal); font-weight:500; } .tg { color:var(--green); } .tr { color:var(--red); }
+
+  /* STEP LIST */
+  .steps { list-style:none; margin:16px 0; }
+  .steps li { display:flex; gap:14px; margin-bottom:16px; align-items:flex-start; }
+  .s-num { width:28px; height:28px; background:var(--teal); color:#fff; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .s-body { flex:1; } .s-body strong { display:block; margin-bottom:3px; font-weight:600; } .s-body p { font-size:15.5px; margin-bottom:0; color:var(--muted); }
+
+  /* PROS / CONS */
+  .pc-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0; }
+  @media(max-width:600px){.pc-grid{grid-template-columns:1fr;}}
+  .pc { border-radius:8px; padding:18px; border:1px solid; }
+  .pc-g { background:var(--green-light); border-color:var(--green); }
+  .pc-r { background:var(--red-light); border-color:var(--red); }
+  .pc-title { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .pc-g .pc-title { color:var(--green); } .pc-r .pc-title { color:var(--red); }
+  .pc-list { list-style:none; }
+  .pc-list li { font-size:15px; font-weight:300; margin-bottom:8px; padding-left:20px; position:relative; }
+  .pc-list li::before { position:absolute; left:0; }
+  .pc-g .pc-list li::before { content:'✓'; color:var(--green); font-weight:700; }
+  .pc-r .pc-list li::before { content:'✗'; color:var(--red); font-weight:700; }
+
+  /* WINDOW SIZE DIAGRAM */
+  .window-diag { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; margin:18px 0; overflow-x:auto; }
+  .sent-row { display:flex; align-items:center; gap:0; margin-bottom:20px; font-family:'JetBrains Mono',monospace; }
+  .sent-word { padding:10px 16px; border:2px solid var(--border); background:var(--surface2); font-size:13px; font-weight:500; color:var(--muted); flex-shrink:0; }
+  .sent-word.target { background:var(--teal); border-color:var(--teal); color:#fff; font-weight:600; }
+  .sent-word.context { background:var(--gold-light); border-color:var(--gold); color:var(--gold); font-weight:600; }
+  .sent-word.context2 { background:var(--purple-light); border-color:var(--purple); color:var(--purple); font-weight:600; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; }
+  .leg-item { display:flex; align-items:center; gap:6px; font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--muted); }
+  .leg-dot { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
+
+  /* NETWORK DIAGRAM */
+  .net-wrap { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; margin:18px 0; display:flex; align-items:center; justify-content:center; gap:0; overflow-x:auto; }
+  .net-layer { display:flex; flex-direction:column; align-items:center; gap:10px; flex-shrink:0; }
+  .net-lbl { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; text-align:center; margin-bottom:4px; }
+  .net-node { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; border:2px solid; flex-shrink:0; }
+  .nn-in { background:var(--blue-light); border-color:var(--blue); color:var(--blue); }
+  .nn-hid { background:var(--teal-light); border-color:var(--teal); color:var(--teal); }
+  .nn-out { background:var(--gold-light); border-color:var(--gold); color:var(--gold); }
+  .net-arrow { color:var(--dim); font-size:22px; padding:0 12px; align-self:center; flex-shrink:0; }
+  .net-label-row { display:flex; align-items:center; justify-content:center; gap:0; margin-top:12px; }
+
+  /* INTERVIEW */
+  .interview { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px 30px; margin:28px 0; box-shadow:0 2px 8px rgba(28,26,22,0.06); }
+  .interview h3 { color:var(--gold); margin-top:0; }
+  .iq { border-left:3px solid var(--gold); padding:12px 16px; margin-bottom:14px; background:var(--gold-light); border-radius:0 6px 6px 0; }
+  .iq .q { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); margin-bottom:6px; letter-spacing:1px; }
+  .iq .a { font-size:15px; color:var(--muted); line-height:1.65; font-weight:300; }
+
+  /* DIVIDER */
+  .div { border:none; height:1px; background:linear-gradient(to right, transparent, var(--border), transparent); margin:52px 0; }
+
+  /* ROADMAP */
+  .rm-wrap { margin:16px 0; }
+  .rm-item { display:flex; gap:14px; margin-bottom:0; }
+  .rm-left { display:flex; flex-direction:column; align-items:center; width:32px; flex-shrink:0; }
+  .rm-dot { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; flex-shrink:0; }
+  .rm-done { background:var(--teal); color:#fff; }
+  .rm-now { background:var(--gold); color:#fff; }
+  .rm-next { background:var(--surface2); border:1px solid var(--border); color:var(--dim); }
+  .rm-line { width:1px; background:var(--border); flex:1; min-height:20px; }
+  .rm-body { padding:5px 0 24px; }
+  .rm-body strong { display:block; font-size:15px; font-weight:600; margin-bottom:2px; }
+  .rm-body span { font-size:13px; color:var(--muted); }
+
+  code { font-family:'JetBrains Mono',monospace; font-size:12.5px; background:var(--surface2); border:1px solid var(--border); padding:2px 7px; border-radius:4px; color:var(--teal); }
+
+  footer { background:var(--ink); color:rgba(248,247,243,0.4); padding:28px 40px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; }
+  footer strong { color:#4dcfbe; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">📘 Class 4 — Session Notes</div>
+    <h1>Word2Vec:<br><span class="a1">CBOW & Skip-gram</span><br><span class="a2">+ Embeddings Practical</span></h1>
+    <p class="hero-sub">Complete classroom-equivalent notes. Vocabulary, window size, CBOW, Skip-gram, neural network training, how embeddings are generated, pre-trained models, and similarity search — all from scratch.</p>
+    <div class="hero-pills">
+      <div class="pill">🎙️ Instructor: <span>Sunny Savita</span></div>
+      <div class="pill">📌 Module: <span>Word2Vec Deep Dive (Class 4)</span></div>
+      <div class="pill">📦 Libraries: <span>Gensim, NumPy</span></div>
+      <div class="pill">🔗 Resources: <span>GitHub Repo + Research Paper</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-lbl">Jump To</span>
+  <a href="#recap">Recap</a>
+  <a href="#vocab">Vocabulary</a>
+  <a href="#window">Window Size</a>
+  <a href="#cbow">CBOW</a>
+  <a href="#skipgram">Skip-gram</a>
+  <a href="#training">Neural Training</a>
+  <a href="#embedding-gen">How Embeddings Form</a>
+  <a href="#dimension">Dimension = Hidden Layer</a>
+  <a href="#practical">Practical Code</a>
+  <a href="#avg-w2v">Average Word2Vec</a>
+  <a href="#proscons">Pros & Cons</a>
+  <a href="#interview">Interview Q&A</a>
+  <a href="#roadmap">Roadmap</a>
+</nav>
+
+<div class="main">
+
+  <div class="intro">
+    <p><strong>This is Class 4</strong> of the encoding & embedding module. The previous session introduced Word2Vec conceptually and covered feature representation. Today's session completes Word2Vec with the two training architectures (<strong>CBOW</strong> and <strong>Skip-gram</strong>), shows how embeddings are actually generated inside the neural network, and runs full practical code with the Google pre-trained model.</p>
+    <p>All code is on GitHub → Full Stack GenAI Bootcamp 1.0. The Word2Vec research paper ("Efficient Estimation of Word Representations in Vector Space", Google 2013) is also uploaded there.</p>
+  </div>
+
+  <!-- SECTION 0: RECAP -->
+  <div class="section" id="recap">
+    <div class="sec-head">
+      <span class="sec-num n-teal">00</span>
+      <div><div class="sec-title">Quick Recap — Where We Are</div><span class="sec-sub">Summary of the full encoding & embedding journey so far</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Technique</th><th>Type</th><th>Vector Values</th><th>Semantic?</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">One-Hot Encoding</td><td>Encoding</td><td>0 or 1</td><td class="tr">✗ No</td><td class="tg">✓ Done</td></tr>
+          <tr><td class="tc">Bag of Words</td><td>Encoding</td><td>Integer counts</td><td class="tr">✗ No</td><td class="tg">✓ Done</td></tr>
+          <tr><td class="tc">TF-IDF</td><td>Encoding</td><td>Decimal weights</td><td class="tr">✗ No</td><td class="tg">✓ Done</td></tr>
+          <tr><td class="tc">Word2Vec (CBOW + Skip-gram)</td><td>Embedding</td><td>Dense floats (300-dim)</td><td class="tg">✓ Yes</td><td style="color:var(--gold);font-weight:600;">▶ Today</td></tr>
+          <tr><td class="tc">SOTA Transformer Embeddings</td><td>Embedding</td><td>Dense floats</td><td class="tg">✓ Yes</td><td style="color:var(--muted);">Next class</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📌 Key Distinction to Always Remember</div>
+      <p><strong>Encoding</strong> (OHE, BoW, TF-IDF) = pure math, no training, no semantic meaning</p>
+      <p><strong>Embedding</strong> (Word2Vec, BERT, GPT embeddings) = neural network training, learns semantic meaning</p>
+      <p>Word2Vec was the first major breakthrough — it proved that neural networks could make words with similar meanings sit close together in vector space.</p>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">📌 What Was Covered Last Class (50% Done)</div>
+      <p>Last session: Word2Vec motivation, Google's 2013 research paper, why we represent words as features, the Sunny vs Tiger feature analogy, and that the hidden layer output = embedding. The pre-trained model gives 300-dimensional vectors.</p>
+      <p>Today: The other 50% — vocabulary, window size, CBOW vs Skip-gram mechanics, how the neural network is trained, where the embedding comes from mathematically, and full practical code.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 1: VOCABULARY -->
+  <div class="section" id="vocab">
+    <div class="sec-head">
+      <span class="sec-num n-teal">01</span>
+      <div><div class="sec-title">Vocabulary — The Universal Foundation</div><span class="sec-sub">Required before any Word2Vec training can begin</span></div>
+    </div>
+
+    <p>Every text-to-number technique — OHE, BoW, TF-IDF, Word2Vec — starts by building a <strong>vocabulary</strong>. Word2Vec is no exception. The vocabulary is the complete set of unique words (tokens) found across all your training data.</p>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📖 Vocabulary Definition</div>
+      <p>A <strong>vocabulary</strong> is a set of all unique words (tokens) present in the training data. Duplicate words are counted only once. The vocabulary determines:</p>
+      <p>→ In OHE/BoW/TF-IDF: the <strong>vector dimension</strong> (vocab size = vector length)</p>
+      <p>→ In Word2Vec: the size of the <strong>input/output layers</strong> of the neural network</p>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head">✏️ Building Vocabulary — Worked Example from Class</div>
+      <div class="ex-body">
+        <p><strong>Sentences:</strong></p>
+        <div style="font-family:'JetBrains Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; line-height:2; margin:8px 0;">
+          S1: "I love AI"<br>
+          S2: "I love coding"
+        </div>
+        <p><strong>Vocabulary</strong> = unique words only (case-sensitive!):</p>
+        <div style="font-family:'JetBrains Mono',monospace; background:var(--surface2); padding:10px 14px; border-radius:6px; font-size:13px; margin:8px 0;">
+          {I, love, AI, and, coding}
+        </div>
+        <p>Note: "I" and "love" appear twice across sentences but appear only <em>once</em> in the vocabulary.</p>
+      </div>
+    </div>
+
+    <div class="callout c-red">
+      <div class="callout-lbl">⚠️ Vocabulary Is Case-Sensitive</div>
+      <p>The instructor emphasized this clearly: "Sunny" (capital S) and "sunny" (lowercase s) are <strong>two different entries</strong> in the vocabulary, because vocabulary is case-sensitive.</p>
+      <p>Similarly, "Apple" and "apple" → both would be separate entries in the raw vocabulary. This is why preprocessing (converting all text to lowercase) is important before building a vocabulary — so "Sunny" and "sunny" are treated as the same word.</p>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head">✏️ Case Sensitivity Example from Class</div>
+      <div class="ex-body">
+        <div style="font-family:'JetBrains Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; line-height:2; margin:8px 0;">
+          S1: "Sunny loves AI"  &nbsp;&nbsp; ← capital S<br>
+          S2: "sunny loves coding"  &nbsp; ← lowercase s
+        </div>
+        <p>Vocabulary = {Sunny, sunny, loves, AI, coding} → 5 words, not 4!</p>
+        <p>"Sunny" and "sunny" are treated as different words → different vector positions → different embeddings!</p>
+        <p style="color:var(--green); font-weight:500; margin-top:8px;">Best practice: convert all text to lowercase before building vocabulary to avoid this duplication.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: WINDOW SIZE -->
+  <div class="section" id="window">
+    <div class="sec-head">
+      <span class="sec-num n-teal">02</span>
+      <div><div class="sec-title">Window Size — The Key Hyperparameter</div><span class="sec-sub">How we convert raw text into training data for the neural network</span></div>
+    </div>
+
+    <div class="quote">
+      <p>To train the Word2Vec neural network, we need labeled data — X (input) and Y (output). But our text data is unstructured. The window size is the mechanism that converts our raw sentences into structured input-output pairs for supervised training.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📖 Window Size Definition</div>
+      <p><strong>Window size</strong> = how many neighbor words to consider on each side (left and right) of a target word.</p>
+      <p>Window size = 1 → consider 1 word to the left and 1 word to the right</p>
+      <p>Window size = 2 → consider 2 words to the left and 2 words to the right</p>
+      <p>Window size is a <strong>hyperparameter</strong> — no fixed correct value. You experiment to find the best one.</p>
+    </div>
+
+    <h3>Why Is Window Size Needed?</h3>
+    <ol class="steps">
+      <li><div class="s-num">1</div><div class="s-body"><strong>Word2Vec trains a neural network</strong><p>Neural networks need labeled data (X → input, Y → output) for supervised learning.</p></div></li>
+      <li><div class="s-num">2</div><div class="s-body"><strong>Text is unstructured</strong><p>"I love deep learning" is not labeled. There's no X and Y column — just raw words.</p></div></li>
+      <li><div class="s-num">3</div><div class="s-body"><strong>Window size converts text into (context, target) pairs</strong><p>By sliding a window across the sentence, we automatically generate training pairs without any human labeling. This is called <em>self-supervised learning</em>.</p></div></li>
+    </ol>
+
+    <h3>Window Size = 1 — Full Worked Example</h3>
+    <p>Sentence: <strong>"I love deep learning"</strong></p>
+    <p>With window size 1, consider 1 word to the left and 1 word to the right of each target word:</p>
+
+    <div class="window-diag">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">Sentence: "I love deep learning" | Window Size = 1</div>
+      <div class="sent-row">
+        <div class="sent-word target">I</div>
+        <div class="sent-word context">love</div>
+        <div class="sent-word">deep</div>
+        <div class="sent-word">learning</div>
+        <span style="margin-left:16px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--muted);">Target = I, Context = love</span>
+      </div>
+      <div class="sent-row">
+        <div class="sent-word context">I</div>
+        <div class="sent-word target">love</div>
+        <div class="sent-word context">deep</div>
+        <div class="sent-word">learning</div>
+        <span style="margin-left:16px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--muted);">Target = love, Context = I, deep</span>
+      </div>
+      <div class="sent-row">
+        <div class="sent-word">I</div>
+        <div class="sent-word context">love</div>
+        <div class="sent-word target">deep</div>
+        <div class="sent-word context">learning</div>
+        <span style="margin-left:16px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--muted);">Target = deep, Context = love, learning</span>
+      </div>
+      <div class="sent-row">
+        <div class="sent-word">I</div>
+        <div class="sent-word">love</div>
+        <div class="sent-word context">deep</div>
+        <div class="sent-word target">learning</div>
+        <span style="margin-left:16px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--muted);">Target = learning, Context = deep</span>
+      </div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--teal);"></div>Target Word</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--gold-light); border:1px solid var(--gold);"></div>Context Word (Window=1)</div>
+      </div>
+    </div>
+
+    <h3>Window Size = 2 — Full Worked Example</h3>
+    <p>Sentence: <strong>"I love deep learning"</strong></p>
+    <p>With window size 2, consider 2 words on each side:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Target Word</th><th>Context Words (Window=2, left+right)</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">I</td><td>love, deep</td><td>No words to the left — only right side</td></tr>
+          <tr><td class="tc">love</td><td>I, deep, learning</td><td>1 left (I), 2 right (deep, learning)</td></tr>
+          <tr><td class="tc">deep</td><td>I, love, learning</td><td>2 left (I, love), 1 right (learning)</td></tr>
+          <tr><td class="tc">learning</td><td>love, deep</td><td>No words to the right — only left side</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">💡 Window Size Trade-offs — Critical Concept</div>
+      <p><strong>Larger window size →</strong> more context around each word → richer understanding → BUT also more noise (irrelevant words get included)</p>
+      <p><strong>Smaller window size →</strong> tighter, more specific context → less noise → BUT might miss important context</p>
+      <p><strong>Typical values:</strong> 5–10 for most use cases. Google's paper used 5. This is a hyperparameter — you tune it through experimentation.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 3: CBOW -->
+  <div class="section" id="cbow">
+    <div class="sec-head">
+      <span class="sec-num n-gold">03</span>
+      <div><div class="sec-title">CBOW — Continuous Bag of Words</div><span class="sec-sub">First of the two Word2Vec training architectures</span></div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📖 CBOW Definition</div>
+      <p><strong>CBOW (Continuous Bag of Words)</strong> = given the context words, predict the target word.</p>
+      <p><strong>Input (X):</strong> context words (surrounding words)</p>
+      <p><strong>Output (Y):</strong> target word (the word in the center)</p>
+    </div>
+
+    <div class="quote">
+      <p>In CBOW, we give the model the surrounding words and ask it: "what word belongs in the middle?" That's how we create our training data automatically from raw text.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Data Preparation for CBOW</h3>
+    <p>Sentence: <strong>"Follow Sunny for Gen AI"</strong> | Window Size: 1</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>X (Input = Context)</th><th>Y (Output = Target)</th><th>Explanation</th></tr></thead>
+        <tbody>
+          <tr><td>Sunny</td><td class="tc">Follow</td><td>"Follow" is first word; right neighbor "Sunny" is context</td></tr>
+          <tr><td>Follow, for</td><td class="tc">Sunny</td><td>Left neighbor "Follow", right neighbor "for"</td></tr>
+          <tr><td>Sunny, Gen</td><td class="tc">for</td><td>Left "Sunny", right "Gen"</td></tr>
+          <tr><td>for, AI</td><td class="tc">Gen</td><td>Left "for", right "AI"</td></tr>
+          <tr><td>Gen</td><td class="tc">AI</td><td>Last word; left neighbor "Gen" is context</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-blue">
+      <div class="callout-lbl">🧠 CBOW Training Goal</div>
+      <p>Train the neural network: given context words → predict the target word in the middle.</p>
+      <p>After training, the weight matrix that represents word relationships becomes the word embeddings.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: SKIP-GRAM -->
+  <div class="section" id="skipgram">
+    <div class="sec-head">
+      <span class="sec-num n-gold">04</span>
+      <div><div class="sec-title">Skip-gram — The Reverse of CBOW</div><span class="sec-sub">Second Word2Vec architecture — predict context from target</span></div>
+    </div>
+
+    <div class="callout c-purple">
+      <div class="callout-lbl">📖 Skip-gram Definition</div>
+      <p><strong>Skip-gram</strong> = given the target word, predict the context words around it.</p>
+      <p><strong>Input (X):</strong> target word (the center word)</p>
+      <p><strong>Output (Y):</strong> context words (surrounding words)</p>
+      <p>It's the UNO reverse of CBOW — simply swap input and output.</p>
+    </div>
+
+    <div class="quote">
+      <p>For Skip-gram, we play the UNO reverse. The target becomes the context, and the context becomes the target. That's the only difference between CBOW and Skip-gram at the data level.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <h3>Data Preparation for Skip-gram</h3>
+    <p>Same sentence: <strong>"Follow Sunny for Gen AI"</strong> | Window Size: 1</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>X (Input = Target)</th><th>Y (Output = Context)</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Follow</td><td>Sunny</td><td>From "Follow" predict its neighbor "Sunny"</td></tr>
+          <tr><td class="tc">Sunny</td><td>Follow, for</td><td>From "Sunny" predict neighbors "Follow" and "for"</td></tr>
+          <tr><td class="tc">for</td><td>Sunny, Gen</td><td>From "for" predict neighbors</td></tr>
+          <tr><td class="tc">Gen</td><td>for, AI</td><td>From "Gen" predict neighbors</td></tr>
+          <tr><td class="tc">AI</td><td>Gen</td><td>From "AI" predict left neighbor "Gen"</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>CBOW vs Skip-gram — Side by Side</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>CBOW</th><th>Skip-gram</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">Full Form</td><td>Continuous Bag of Words</td><td>Skip-gram (no full form — it IS the name)</td></tr>
+          <tr><td class="tc">Input (X)</td><td>Context words → predict target</td><td>Target word → predict context</td></tr>
+          <tr><td class="tc">Output (Y)</td><td>Target word</td><td>Context words</td></tr>
+          <tr><td class="tc">Difference</td><td colspan="2" style="text-align:center;">Only at the data preparation level — the neural network architecture is the same!</td></tr>
+          <tr><td class="tc">Better for</td><td>Small datasets, frequent words</td><td>Large datasets, rare words</td></tr>
+          <tr><td class="tc">Google's choice</td><td>–</td><td>Google's pre-trained model was trained with Skip-gram (better for large corpus like Google News)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">🎯 Key Interview Insight</div>
+      <p>The difference between CBOW and Skip-gram is <strong>only in how training data is prepared</strong>. The neural network architecture (1 hidden layer, same input/output layer size) is identical. Just the direction of prediction is reversed.</p>
+      <p>Google trained their official pre-trained model using <strong>Skip-gram</strong> because Skip-gram performs better with large, diverse datasets like Google News.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 5: NEURAL NETWORK TRAINING -->
+  <div class="section" id="training">
+    <div class="sec-head">
+      <span class="sec-num n-purple">05</span>
+      <div><div class="sec-title">How the Neural Network Is Trained</div><span class="sec-sub">Step-by-step: from raw text to a trained Word2Vec model</span></div>
+    </div>
+
+    <ol class="steps">
+      <li><div class="s-num">1</div><div class="s-body"><strong>Take raw text data</strong><p>Any corpus of text — a sentence, a book, a news archive. Word2Vec learns from the patterns in this data.</p></div></li>
+      <li><div class="s-num">2</div><div class="s-body"><strong>Build vocabulary</strong><p>Extract all unique words. Vocabulary size = V. This determines the size of input and output layers.</p></div></li>
+      <li><div class="s-num">3</div><div class="s-body"><strong>Create one-hot encoded vectors for each vocabulary word</strong><p>Each word becomes a V-dimensional binary vector with 1 at its position and 0 everywhere else. These are the initial representations.</p></div></li>
+      <li><div class="s-num">4</div><div class="s-body"><strong>Prepare training pairs using window size</strong><p>Using CBOW or Skip-gram approach, generate (context, target) or (target, context) pairs from the text.</p></div></li>
+      <li><div class="s-num">5</div><div class="s-body"><strong>Feed data into neural network and train</strong><p>Input = one-hot vectors of context/target words. Run forward propagation → compute loss → run backward propagation → update weights. Repeat for many epochs.</p></div></li>
+      <li><div class="s-num">6</div><div class="s-body"><strong>Extract the embedding</strong><p>After training, the best-fit weight matrix of the hidden layer IS the embedding matrix. Each row = the embedding vector for one vocabulary word.</p></div></li>
+    </ol>
+
+    <h3>The Neural Network Architecture (CBOW Example)</h3>
+
+    <div class="ex">
+      <div class="ex-head">🏗️ Architecture for CBOW — "Follow Sunny for Gen AI", Window=1, Vocab=5</div>
+      <div class="ex-body">
+        <p><strong>Vocabulary:</strong> [AI, follow, for, Gen, Sunny] → 5 words → vector size = 5</p>
+        <p><strong>Example training pair:</strong> Input = [follow, for] → Output = "Sunny"</p>
+        <p><strong>One-hot vectors:</strong></p>
+        <div style="font-family:'JetBrains Mono',monospace; background:var(--surface2); padding:12px 14px; border-radius:6px; font-size:13px; line-height:2; margin:8px 0;">
+          AI     → [1, 0, 0, 0, 0]<br>
+          follow → [0, 1, 0, 0, 0]<br>
+          for    → [0, 0, 1, 0, 0]<br>
+          Gen    → [0, 0, 0, 1, 0]<br>
+          Sunny  → [0, 0, 0, 0, 1]
+        </div>
+      </div>
+    </div>
+
+    <div class="net-wrap">
+      <div class="net-layer">
+        <div class="net-lbl">INPUT<br>LAYER<br>size=5×2<br>(2 words)</div>
+        <div class="net-node nn-in">X₁</div>
+        <div class="net-node nn-in">X₂</div>
+        <div class="net-node nn-in">X₃</div>
+        <div class="net-node nn-in">X₄</div>
+        <div class="net-node nn-in">X₅</div>
+      </div>
+      <div class="net-arrow">⟶<br><br><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);">W₁<br>5×3</span></div>
+      <div class="net-layer">
+        <div class="net-lbl">HIDDEN<br>LAYER<br>size=3<br>(hyperparameter)</div>
+        <div class="net-node nn-hid">H₁</div>
+        <div class="net-node nn-hid">H₂</div>
+        <div class="net-node nn-hid">H₃</div>
+      </div>
+      <div class="net-arrow">⟶<br><br><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);">W₂<br>3×5</span></div>
+      <div class="net-layer">
+        <div class="net-lbl">OUTPUT<br>LAYER<br>size=5<br>Softmax</div>
+        <div class="net-node nn-out">O₁</div>
+        <div class="net-node nn-out">O₂</div>
+        <div class="net-node nn-out">O₃</div>
+        <div class="net-node nn-out">O₄</div>
+        <div class="net-node nn-out">O₅</div>
+      </div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📐 Matrix Sizes — Why?</div>
+      <p><strong>W₁ (Input → Hidden):</strong> 5 × 3 → 5 vocab words × 3 hidden neurons → 15 learnable weights</p>
+      <p><strong>W₂ (Hidden → Output):</strong> 3 × 5 → 3 hidden neurons × 5 output positions → 15 learnable weights</p>
+      <p><strong>Output layer:</strong> 5 neurons (one per vocabulary word). After Softmax, gives probability distribution over all words. Highest probability = predicted word.</p>
+      <p>In Google's real model: vocab size V = millions, hidden layer = 300. So W₁ = V × 300 and W₂ = 300 × V.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: HOW EMBEDDINGS ARE GENERATED -->
+  <div class="section" id="embedding-gen">
+    <div class="sec-head">
+      <span class="sec-num n-purple">06</span>
+      <div><div class="sec-title">Where Exactly Do Embeddings Come From?</div><span class="sec-sub">The most important conceptual point of the entire session</span></div>
+    </div>
+
+    <div class="quote">
+      <p>The embedding is the output of the hidden layer after training. The best possible weights, after all the forward and backward propagations — that weight matrix IS the embedding. Each word's row in that matrix is its embedding vector.</p>
+      <cite>— Sunny Savita</cite>
+    </div>
+
+    <ol class="steps">
+      <li><div class="s-num">1</div><div class="s-body"><strong>Initialize weights randomly</strong><p>W₁ and W₂ start with random values between some range (e.g., -1 to 1). At this point the model knows nothing.</p></div></li>
+      <li><div class="s-num">2</div><div class="s-body"><strong>Forward Propagation (FP)</strong><p>Pass input (one-hot vector of context word) → multiply by W₁ → get hidden layer output → multiply by W₂ → apply Softmax → get predicted probability for each vocabulary word.</p></div></li>
+      <li><div class="s-num">3</div><div class="s-body"><strong>Calculate Loss</strong><p>Compare predicted output (probability distribution) with actual target (one-hot vector of target word). The difference = loss. Initially loss is high because weights are random.</p></div></li>
+      <li><div class="s-num">4</div><div class="s-body"><strong>Backward Propagation (BP) — Gradient Descent</strong><p>Use the loss to calculate how much to adjust each weight. Update W₁ and W₂ in the direction that reduces loss. This is gradient descent.</p></div></li>
+      <li><div class="s-num">5</div><div class="s-body"><strong>Repeat for many epochs</strong><p>One epoch = one full pass through all training pairs (FP + BP). Run hundreds or thousands of epochs. With each epoch, weights improve → loss decreases → model understands context better.</p></div></li>
+      <li><div class="s-num">6</div><div class="s-body"><strong>Extract embeddings from W₁</strong><p>Once training is done, W₁ (the input-to-hidden weight matrix) is the embedding matrix. Row i of W₁ = the embedding for word i. The hidden layer output for any input word = that word's embedding vector.</p></div></li>
+    </ol>
+
+    <div class="ex">
+      <div class="ex-head">🔬 Why Is the Hidden Layer Output = Embedding?</div>
+      <div class="ex-body">
+        <p>During training, the model learns to predict target words from context words. To do this correctly, it must understand which words appear in similar contexts.</p>
+        <p>Words that appear in similar contexts (e.g., "cat" and "dog" both appear near "pet", "feed", "play") will develop similar hidden layer representations — similar embedding vectors.</p>
+        <p>So the hidden layer, after training, encodes <em>meaning through context</em>. The output of the hidden layer for any word = a vector that captures that word's semantic meaning.</p>
+        <p style="color:var(--teal); font-weight:500; margin-top:8px;">That's why hidden layer output = embedding. It's not designed explicitly — it <em>emerges</em> from the training process.</p>
+      </div>
+    </div>
+
+    <div class="callout c-purple">
+      <div class="callout-lbl">🔑 No Activation Function in the Hidden Layer</div>
+      <p>A student asked: "Why no activation function in Word2Vec?" Sunny's answer: Because the goal here is not classification or non-linear decision making — we just want a linear transformation of the input to produce a dense vector representation. Adding an activation function would distort the embedding values. The output layer uses Softmax for probability, but the hidden layer is intentionally linear.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 7: DIMENSION = HIDDEN LAYER -->
+  <div class="section" id="dimension">
+    <div class="sec-head">
+      <span class="sec-num n-purple">07</span>
+      <div><div class="sec-title">Embedding Dimension = Hidden Layer Size</div><span class="sec-sub">This is the critical formula that connects architecture to output</span></div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📐 The Golden Rule</div>
+      <p><strong>OHE / BoW / TF-IDF vector dimension</strong> = Vocabulary size (fixed by data)</p>
+      <p><strong>Word2Vec embedding dimension</strong> = Number of neurons in the hidden layer (hyperparameter — you choose it!)</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Model</th><th>Hidden Layer Size</th><th>Embedding Dimension</th></tr></thead>
+        <tbody>
+          <tr><td>Our classroom example</td><td>3 neurons</td><td>3-dimensional vectors</td></tr>
+          <tr><td class="tc">Google's pre-trained model</td><td>300 neurons</td><td>300-dimensional vectors</td></tr>
+          <tr><td>Custom model (you decide)</td><td>Any number</td><td>Same as hidden layer</td></tr>
+          <tr><td>LLMs (e.g., GPT-4)</td><td>Thousands</td><td>Thousands of dimensions</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">💡 Higher Dimension = More Capacity to Capture Meaning</div>
+      <p>More neurons in the hidden layer → higher-dimensional vectors → more features can be captured → model can represent more nuanced word relationships.</p>
+      <p>But: more neurons = more computation = longer training time. 300 dimensions is the widely accepted sweet spot for most NLP tasks.</p>
+      <p>Like LLMs: a 1B parameter model vs 70B parameter model — more parameters = more capacity, but also much more compute required.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 8: PRACTICAL CODE -->
+  <div class="section" id="practical">
+    <div class="sec-head">
+      <span class="sec-num n-blue">08</span>
+      <div><div class="sec-title">Practical — Using Google's Pre-Trained Word2Vec Model</div><span class="sec-sub">Complete Gensim code as written in the live session</span></div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📦 Setup</div>
+      <p>File: <code>classical_word_embedding.ipynb</code></p>
+      <p>Library: <code>gensim</code> (requires Python 3.11 — not compatible with 3.12)</p>
+      <p>Model: Google's <code>word2vec-google-news-300</code> — trained on billions of Google News words, 300-dimensional vectors</p>
+      <p>⚠️ First download takes 10–15 minutes. Model is cached after first load.</p>
+    </div>
+
+    <h3>Part 1 — Load the Pre-Trained Model</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Load Google Pre-Trained Word2Vec</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Import required libraries</span>
+<span class="kw">from</span> <span class="imp">gensim.models</span> <span class="kw">import</span> <span class="fn">Word2Vec</span>, <span class="fn">KeyedVectors</span>
+<span class="kw">import</span> <span class="imp">gensim.downloader</span> <span class="kw">as</span> <span class="var">api</span>
+
+<span class="cm"># Load Google's pre-trained Word2Vec model
+# Trained on Google News data (billions of words)
+# 300-dimensional vectors, skip-gram architecture
+# First time: downloads ~1.5GB, takes 10-15 min</span>
+<span class="var">model</span> = <span class="var">api</span>.<span class="fn">load</span>(<span class="str">"word2vec-google-news-300"</span>)
+
+<span class="cm"># Hidden layer size = 300 → every word = 300-dim vector
+# This is the embedding dimension</span></pre>
+    </div>
+
+    <h3>Part 2 — Get Word Embeddings</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Generate Word Vectors</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Get embedding vector for a single word</span>
+<span class="var">vector</span> = <span class="var">model</span>[<span class="str">"Sunny"</span>]   <span class="cm"># Returns a 300-dimensional float array</span>
+<span class="fn">print</span>(<span class="var">vector</span>)             <span class="cm"># [-0.123, 0.456, 0.012, ...] — 300 decimal numbers</span>
+
+<span class="cm"># Check the vector dimension</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">vector</span>))         <span class="cm"># Output: 300</span>
+
+<span class="cm"># NOTE: Word2Vec works on single words only
+# Passing multiple words or a sentence causes a KeyError</span>
+<span class="cm"># model["I am Sunny"]  ← KeyError! Use Average Word2Vec for sentences</span>
+
+<span class="cm"># Words not in training data will also cause KeyError
+# e.g., model["ChatGPT"] ← KeyError (word didn't exist in 2013)</span></pre>
+    </div>
+
+    <h3>Part 3 — Find Most Similar Words</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Semantic Similarity Operations</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># Find words most similar to "man"</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">most_similar</span>(<span class="str">"man"</span>))
+<span class="cm"># Output: [('woman', 0.76), ('boy', 0.73), ('teenager', 0.68), ...]
+# Trained on Google News → criminal news may bias "man" toward suspect-related words</span>
+
+<span class="cm"># Find words most similar to "cricket"</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">most_similar</span>(<span class="str">"cricket"</span>))
+<span class="cm"># Output: [('cricketing', 0.82), ('cricketers', 0.80), ('Test Cricket', 0.79), ...]</span>
+
+<span class="cm"># Check similarity between two words (uses cosine similarity internally)</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"man"</span>, <span class="str">"woman"</span>))  <span class="cm"># ~0.76 — 76% similar</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"man"</span>, <span class="str">"man"</span>))    <span class="cm"># 1.0 — identical words = 100%</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"happy"</span>, <span class="str">"joy"</span>))  <span class="cm"># ~0.35 — less similar (model not perfect)</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"Python"</span>, <span class="str">"Java"</span>))<span class="cm"># very low — treated as unrelated</span>
+
+<span class="cm"># Case sensitivity demonstration</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"Sunny"</span>, <span class="str">"Sunny"</span>))  <span class="cm"># 1.0 — identical</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">similarity</span>(<span class="str">"Sunny"</span>, <span class="str">"sunny"</span>))  <span class="cm"># ~0.43 — DIFFERENT! Case sensitive!</span>
+
+<span class="cm"># Find the odd one out</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">doesnt_match</span>([<span class="str">"PHP"</span>, <span class="str">"Java"</span>, <span class="str">"dog"</span>, <span class="str">"C++"</span>]))  <span class="cm"># → 'dog'</span></pre>
+    </div>
+
+    <h3>Part 4 — The Famous King − Man + Woman = Queen</h3>
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Vector Arithmetic</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="cm"># The classic Word2Vec demonstration
+# king - man + woman should give something close to queen</span>
+result_vector = <span class="var">model</span>[<span class="str">"king"</span>] - <span class="var">model</span>[<span class="str">"man"</span>] + <span class="var">model</span>[<span class="str">"woman"</span>]
+
+<span class="cm"># Find the most similar word to that computed vector</span>
+<span class="fn">print</span>(<span class="var">model</span>.<span class="fn">most_similar</span>([<span class="var">result_vector</span>]))
+<span class="cm"># Output: [('queen', 0.71), ('princess', 0.65), ...]  ← Queen appears near top!</span>
+
+<span class="cm"># This proves Word2Vec has learned that:
+# king and queen have the same relationship as man and woman
+# Meaning is encoded in the vector arithmetic itself!</span></pre>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">🔍 Why Does the Pre-trained Model Know "Sunny"?</div>
+      <p>A student asked: "How does the model give a vector for 'Sunny' if it's a person's name?" — Sunny's answer: "Sunny" is a common English word (sunny day, sunny weather) that appears frequently in news articles. The model may have a vector for it. But "ChatGPT" would fail with a KeyError because that word didn't exist in 2013 when the model was trained. This is the Out-of-Vocabulary problem in action.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 9: AVERAGE WORD2VEC -->
+  <div class="section" id="avg-w2v">
+    <div class="sec-head">
+      <span class="sec-num n-blue">09</span>
+      <div><div class="sec-title">Average Word2Vec — Sentence-Level Embedding</div><span class="sec-sub">How to convert an entire sentence into a single vector using Word2Vec</span></div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">📖 Problem: Word2Vec Only Works on Single Words</div>
+      <p>The Word2Vec model converts one word at a time into a 300-dimensional vector. But in real applications, we usually need to represent <strong>entire sentences or paragraphs</strong> as single vectors (e.g., for RAG retrieval, document similarity).</p>
+      <p>The solution: <strong>Average Word2Vec</strong> — get a vector for each word in the sentence, then take the average across all words to produce one sentence vector.</p>
+    </div>
+
+    <h3>How Average Word2Vec Works</h3>
+    <ol class="steps">
+      <li><div class="s-num">1</div><div class="s-body"><strong>Tokenize the sentence</strong><p>"I love machine learning" → ["I", "love", "machine", "learning"]</p></div></li>
+      <li><div class="s-num">2</div><div class="s-body"><strong>Get embedding for each word</strong><p>model["I"] → 300-dim vector, model["love"] → 300-dim vector, etc.</p></div></li>
+      <li><div class="s-num">3</div><div class="s-body"><strong>Stack all word vectors into a matrix</strong><p>4 words × 300 dimensions = 4 × 300 matrix</p></div></li>
+      <li><div class="s-num">4</div><div class="s-body"><strong>Take the column-wise average</strong><p>Average across all word vectors → one 300-dimensional sentence vector</p></div></li>
+    </ol>
+
+    <div class="code-wrap">
+      <div class="code-head"><span class="code-lang">Python — Average Word2Vec for Sentence Embedding</span><div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div></div>
+      <pre><span class="kw">import</span> <span class="imp">numpy</span> <span class="kw">as</span> <span class="var">np</span>
+
+<span class="cm"># The sentence to embed</span>
+<span class="var">sentence</span> = <span class="str">"I love machine learning"</span>
+
+<span class="cm"># Step 1: Tokenize (lowercase + split)</span>
+<span class="var">words</span> = <span class="var">sentence</span>.<span class="fn">lower</span>().<span class="fn">split</span>()
+<span class="cm"># → ['i', 'love', 'machine', 'learning']</span>
+
+<span class="cm"># Step 2: Get vector for each word</span>
+<span class="var">word_vectors</span> = []
+<span class="kw">for</span> <span class="var">word</span> <span class="kw">in</span> <span class="var">words</span>:
+    <span class="kw">try</span>:
+        <span class="var">word_vectors</span>.<span class="fn">append</span>(<span class="var">model</span>[<span class="var">word</span>])
+    <span class="kw">except</span> <span class="fn">KeyError</span>:
+        <span class="kw">pass</span>  <span class="cm"># skip OOV words</span>
+
+<span class="cm"># Step 3 & 4: Stack vectors + take column-wise average</span>
+<span class="var">sentence_vector</span> = <span class="var">np</span>.<span class="fn">mean</span>(<span class="var">word_vectors</span>, axis=<span class="num">0</span>)
+
+<span class="cm"># Result: one 300-dimensional vector for the entire sentence</span>
+<span class="fn">print</span>(<span class="var">sentence_vector</span>.<span class="fn">shape</span>)   <span class="cm"># (300,)</span>
+<span class="fn">print</span>(<span class="var">sentence_vector</span>)          <span class="cm"># [0.123, -0.456, ...] — 300 floats</span></pre>
+    </div>
+
+    <div class="callout c-red">
+      <div class="callout-lbl">⚠️ Average Word2Vec Is Old Technology</div>
+      <p>Average Word2Vec was popular around 2015–2016. It works but has a key limitation: it ignores word order. "I love AI" and "AI love I" would produce the same sentence vector because averaging destroys sequence information.</p>
+      <p>Modern SOTA models (Sentence-BERT, OpenAI embeddings, Gemini embeddings) produce context-aware sentence embeddings that account for order and meaning. Those are what we use today in RAG systems.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 10: PROS CONS -->
+  <div class="section" id="proscons">
+    <div class="sec-head">
+      <span class="sec-num n-green">10</span>
+      <div><div class="sec-title">Word2Vec — Pros & Cons</div><span class="sec-sub">What made it revolutionary, and why we moved on</span></div>
+    </div>
+
+    <div class="pc-grid">
+      <div class="pc pc-g">
+        <div class="pc-title">✅ Advantages</div>
+        <ul class="pc-list">
+          <li><strong>Efficient & fast training</strong> — shallow network (only 1 hidden layer) → quick to train</li>
+          <li><strong>Semantic understanding</strong> — similar words get similar vectors (King ≈ Queen, car ≈ vehicle)</li>
+          <li><strong>Vector arithmetic works</strong> — King − Man + Woman ≈ Queen. Relationships encoded in vectors</li>
+          <li><strong>Pre-trained model available</strong> — Google's model can be used immediately, no training needed</li>
+          <li><strong>General-purpose embeddings</strong> — works for NLP pipelines, ML modeling, clustering</li>
+          <li><strong>Still used inside Transformers</strong> — initial token embedding layer in Transformers uses Word2Vec-style embedding</li>
+        </ul>
+      </div>
+      <div class="pc pc-r">
+        <div class="pc-title">❌ Disadvantages</div>
+        <ul class="pc-list">
+          <li><strong>Static embeddings</strong> — "bank" in "river bank" and "bank account" get the SAME vector. Context is not considered</li>
+          <li><strong>Out-of-Vocabulary (OOV)</strong> — words not in training data can't be embedded (e.g., "ChatGPT" fails on 2013 model)</li>
+          <li><strong>Cannot handle sub-words</strong> — "running", "runner", "runs" are unrelated; no morphological understanding</li>
+          <li><strong>No sentence-level context</strong> — Average Word2Vec loses word order</li>
+          <li><strong>Case sensitivity issue</strong> — "Sunny" and "sunny" are different words</li>
+          <li><strong>Replaced by transformers</strong> — GPT, BERT, and modern LLMs produce dynamic, context-aware embeddings</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout c-teal">
+      <div class="callout-lbl">🔗 Word2Vec Still Lives Inside Transformers</div>
+      <p>When the instructor showed the "Attention is All You Need" paper, he pointed to the <strong>Input Embedding</strong> block at the bottom of the diagram. That block converts tokens into embeddings using a Word2Vec-style mechanism before they enter the multi-head attention layers.</p>
+      <p>So Word2Vec isn't completely obsolete — it's the foundation layer. The Transformer then refines these initial embeddings through self-attention to produce dynamic, context-aware representations.</p>
+    </div>
+
+    <div class="callout c-red">
+      <div class="callout-lbl">🔴 The Static Embedding Problem — Explained</div>
+      <p>Consider the word <strong>"bank"</strong>:</p>
+      <p>→ "I went to the river <strong>bank</strong>" → "bank" = water's edge</p>
+      <p>→ "I deposited money at the <strong>bank</strong>" → "bank" = financial institution</p>
+      <p>Word2Vec gives BOTH usages the exact same 300-dimensional vector — because it was trained on the whole corpus and the vector averages all contexts. It cannot change the embedding based on the sentence it's currently in.</p>
+      <p>This is why BERT (2018) was revolutionary — it introduced <strong>contextual embeddings</strong>: the same word "bank" gets a different vector depending on what sentence it's in.</p>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 11: INTERVIEW -->
+  <div class="section" id="interview">
+    <div class="sec-head">
+      <span class="sec-num n-red">11</span>
+      <div><div class="sec-title">Interview Preparation</div><span class="sec-sub">All the questions from real GenAI interviews — answers included</span></div>
+    </div>
+
+    <div class="interview">
+      <h3>🎯 Word2Vec Interview Q&A</h3>
+
+      <div class="iq">
+        <div class="q">Q1: What is Word2Vec?</div>
+        <div class="a">Word2Vec is a neural network-based technique introduced by Google in 2013 for representing words as dense, fixed-dimensional vectors (embeddings). Unlike OHE/BoW/TF-IDF which use counting, Word2Vec trains a shallow neural network to predict words from context (or context from words), and the learned hidden layer weights become the word embeddings. Similar words end up with similar vectors — "King" and "Queen" are close, "car" and "vehicle" are close.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q2: What is the difference between CBOW and Skip-gram?</div>
+        <div class="a">Both are architectures inside Word2Vec — the neural network structure is the same (one hidden layer). The difference is only in data preparation. CBOW: given context words → predict the target word. Skip-gram: given the target word → predict context words. Skip-gram performs better with large datasets (like Google News) and handles rare words better. Google's official pre-trained model uses Skip-gram.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q3: What is window size in Word2Vec?</div>
+        <div class="a">Window size defines how many neighbor words to consider on each side of a target word when creating training pairs. Window size = 1 means 1 word left and 1 word right. Window size = 2 means 2 on each side. It's a hyperparameter — larger window = more context but also more noise. You find the optimal value through experimentation.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q4: What is the embedding dimension in Word2Vec, and how is it determined?</div>
+        <div class="a">The embedding dimension equals the number of neurons in the hidden layer. It's a hyperparameter — you choose it. Google's pre-trained model uses 300 dimensions (found through experimentation). In your custom model, you can use any value: 50, 100, 300, 500. More dimensions = more capacity to capture meaning, but more compute. The vector for every word will have this many numbers.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q5: Where does the embedding come from in the Word2Vec neural network?</div>
+        <div class="a">The embedding is the output of the hidden layer after training completes. During training, the weight matrix W₁ (connecting input to hidden layer) gets optimized via forward and backward propagation to minimize prediction loss. Once training is done, the rows of W₁ are the embeddings — each row corresponds to one vocabulary word's embedding vector.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q6: What is the biggest limitation of Word2Vec?</div>
+        <div class="a">Static embeddings — Word2Vec gives each word one fixed vector regardless of context. "Bank" in "river bank" and "bank account" get the same vector. This is a major limitation. Modern transformer-based models like BERT create contextual embeddings — the same word gets a different vector depending on the surrounding sentence. This was the key innovation that made BERT and GPT transformative.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q7: Is Word2Vec still used today?</div>
+        <div class="a">Yes — indirectly. The initial token embedding layer inside every Transformer architecture uses a Word2Vec-style lookup: tokens are mapped to dense vectors before entering the self-attention mechanism. After that, the Transformer's attention layers refine these embeddings into context-aware representations. So Word2Vec is the foundation, and attention mechanisms build on top of it.</div>
+      </div>
+
+      <div class="iq">
+        <div class="q">Q8: What is Average Word2Vec and when was it used?</div>
+        <div class="a">Average Word2Vec is a technique for creating sentence-level embeddings using Word2Vec. Get the embedding for each word in the sentence, then take the element-wise average of all word vectors to produce a single sentence vector. Popular around 2015–2016. It's simple but loses word order. Replaced by sentence transformers (Sentence-BERT, etc.) which produce better sentence embeddings by considering the full sentence context.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+
+  <!-- SECTION 12: ROADMAP -->
+  <div class="section" id="roadmap">
+    <div class="sec-head">
+      <span class="sec-num n-blue">12</span>
+      <div><div class="sec-title">Course Roadmap — Updated After Class 4</div><span class="sec-sub">Where we are and what's next</span></div>
+    </div>
+
+    <div class="rm-wrap">
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>One-Hot Encoding (Class 1)</strong><span>Binary presence vectors, document vs word-level representation, OOV problem</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>Bag of Words (Class 1–2)</strong><span>Word count vectors, word order problem, sparse matrices</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>TF-IDF (Class 3)</strong><span>Term Frequency × IDF, log normalization, sklearn TfidfVectorizer</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>Word2Vec Intro: Feature Representation (Class 3)</strong><span>Why embeddings, Google 2013 paper, features as learned weights</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-done">✓</div><div class="rm-line"></div></div><div class="rm-body"><strong>Word2Vec Deep Dive: CBOW, Skip-gram, Practical (Class 4 — Today)</strong><span>Window size, training data prep, neural network training, embeddings, Gensim pre-trained model, Average Word2Vec</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-now">→</div><div class="rm-line"></div></div><div class="rm-body"><strong>Skip-gram Final Example + One Calculation (Next Class)</strong><span>Skip-gram neural network diagram, one full numerical example, how weights converge</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">6</div><div class="rm-line"></div></div><div class="rm-body"><strong>SOTA Embedding Models (Next Class)</strong><span>OpenAI embeddings (paid), Google Gemini embeddings (free), Hugging Face Sentence Transformers (free). Cosine similarity, keyword vs semantic search</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">7</div><div class="rm-line"></div></div><div class="rm-body"><strong>Transformer Architecture (3–4 classes)</strong><span>Attention mechanism ("Attention is All You Need" paper), encoder-decoder, multi-head attention — for interview & LLM understanding</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">8</div><div class="rm-line"></div></div><div class="rm-body"><strong>LLM Architecture Overview</strong><span>LLaMA architecture, multimodal LLMs (image-text, video-text, audio-text), high-level overview</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">9</div><div class="rm-line"></div></div><div class="rm-body"><strong>Fine-Tuning — The Real GenAI Starts Here</strong><span>Hugging Face, Unsloth, knowledge tuning, preference tuning, LoRA</span></div></div>
+      <div class="rm-item"><div class="rm-left"><div class="rm-dot rm-next">10</div></div><div class="rm-body"><strong>RAG → Agents → MCP → LLMOps → Projects</strong><span>The advanced GenAI module — where all foundations come together</span></div></div>
+    </div>
+
+    <div class="callout c-blue">
+      <div class="callout-lbl">📌 Action Items Before Next Class</div>
+      <p><strong>Generate API keys</strong> (needed for next session):</p>
+      <p>→ <strong>Google (Gemini)</strong> — Free. Go to ai.google.dev and get a Gemini API key.</p>
+      <p>→ <strong>Hugging Face</strong> — Free. Sign up at huggingface.co and generate an access token.</p>
+      <p>→ <strong>OpenAI</strong> — Paid. Generate only if you want to use GPT embeddings; can skip for now.</p>
+      <p><strong>Review this session's code</strong> from GitHub and run the Gensim examples yourself. Try different words, try the King-Man+Woman example.</p>
+      <p><strong>Complete the assignment</strong> (from Class 3 GitHub) if not done — Assignment 1 solution will be posted on Monday.</p>
+    </div>
+
+    <div class="callout c-gold">
+      <div class="callout-lbl">🏆 Mega Challenge Coming</div>
+      <p>After completing fine-tuning (in a few months), the instructor will announce a <strong>Mega Challenge</strong> — a large assignment with prizes (gifts, extra course access, cash prizes). It covers everything from encoding through fine-tuning. Start building your understanding now!</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Full Stack GenAI Bootcamp 1.0 &nbsp;·&nbsp; Session: <strong>Word2Vec Deep Dive — CBOW, Skip-gram & Practical (Class 4)</strong><br>
+  <span style="margin-top:6px; display:block;">GitHub: <strong>Full Stack GenAI Bootcamp 1.0</strong> &nbsp;·&nbsp; Platform: <strong>krishnaik.academy</strong></span>
+</footer>
+
+</body>
+</html>
